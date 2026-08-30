@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10 — 2026-08-30
+
+- Wizard and docs copy: grammar pass, written so a 10th grader can follow it. HVAC logic unchanged.
+
 ## 0.1.9 / package 1.4.1 — 2026-08-30
 
 - Tesla direction template: `toward` | `away` | `inhome`. Empty dest is not automatically away. Location home (driveway) is inhome. Route/dest matching home + TTA > 0 → toward. Nav dest not home → away. No usable nav uses falling/rising `distance()` to `zone.home` (0.08 km hysteresis).

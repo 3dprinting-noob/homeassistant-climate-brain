@@ -67,19 +67,19 @@
       <li>FORCED AIR HVAC ONLY (FOR NOW).</li>
       <li>HOME ASSISTANT MUST HAVE WIRED OR WIRELESS CONTROL OF THE HVAC FOR HEAT, COOL, AND HEAT-COOL.</li>
     </ol>
-    <p class="prereq" style="margin-top:12px">How to remove extra thermostats (delete the controllers, not the HVAC climate entities):</p>
+    <p class="prereq" style="margin-top:12px">How to remove extra thermostats (delete the extra controllers, not the HVAC itself):</p>
     <ol class="howto">
-      <li>Delete Versatile Thermostat / VTherm devices and helpers on these zones. Disable is not enough if they still run on restart.</li>
+      <li>Delete Versatile Thermostat / VTherm devices and helpers for these zones. Turning them off is not enough if they start again after a restart.</li>
       <li>Delete automations, scripts, Node-RED flows, and helpers that call <code>climate.set_temperature</code>, <code>climate.set_hvac_mode</code>, or <code>climate.set_preset_mode</code>.</li>
-      <li>Remove Generic Thermostat, Dual Smart Thermostat, or Better Thermostat wrapping the same equipment.</li>
-      <li>In the HVAC app (Trane Home / Nexia): turn off Auto and weekly schedules. Occupied mode is heat_cool, never Auto.</li>
-      <li>Leave the <code>climate.*</code> zone entities. Two writers will fight and the house will oscillate.</li>
+      <li>Remove Generic Thermostat, Dual Smart Thermostat, or Better Thermostat if they wrap the same equipment.</li>
+      <li>In the HVAC app (Trane Home / Nexia): turn off Auto and weekly schedules. When people are home, use heat_cool, never Auto.</li>
+      <li>Keep the <code>climate.*</code> zone entities. If two programs both change the thermostats, the house will bounce between temperatures.</li>
     </ol>
   </div>
   <h1>Climate Brain v1.4.1</h1>
 
-  <p class="lead">Stamps a Home Assistant package for communicating HVAC zones. Occupancy is any on/off sensor. Travel is optional. Tesla is never occupancy.</p>
-  <p class="note">Temperature vocabulary (Comfort / Eco / Boost / Away) is inspired by <a href="https://github.com/jmcollin78/versatile_thermostat" style="color:#18bcf2">Versatile Thermostat</a>. Climate Brain writes the HVAC climates directly. Attributes: GrokAI.</p>
+  <p class="lead">This page builds a Home Assistant file that controls your heating and cooling. Occupancy is any on/off sensor that means “someone is home.” Travel (phones or Tesla) is optional. A Tesla is never used to decide if the house is occupied.</p>
+  <p class="note">Names like Comfort, Eco, Boost, and Away are inspired by <a href="https://github.com/jmcollin78/versatile_thermostat" style="color:#18bcf2">Versatile Thermostat</a>. Climate Brain talks to the HVAC climates itself. It does not install VTherm. Credit: GrokAI.</p>
 
   <h2>House</h2>
   <div class="grid">
@@ -97,62 +97,70 @@
       </select>
     </div>
     <div>
-      <label>Outdoor temperature (HVAC outdoor, local weather, or any HA weather)</label>
+      <label>Outdoor temperature</label>
       <div class="entity-row">
         <input id="outdoor" value="" placeholder="sensor.outdoor_temperature" autocomplete="off" />
         <button type="button" class="ghost" data-fill="outdoor" data-val="sensor.outdoor_temperature">Use default</button>
       </div>
-      <p class="hint">Any temperature <code>sensor.*</code> (Met.no, OpenWeather, AccuWeather, Accu, your HVAC outdoor). Or a <code>weather.*</code> entity; the package reads its <code>temperature</code> attribute. Suggested: <code>sensor.outdoor_temperature</code> or <code>weather.home</code>.</p>
+      <p class="hint">Use a temperature sensor from your HVAC or from weather (Met.no, OpenWeather, AccuWeather). A <code>weather.*</code> entity works too; Climate Brain reads its temperature. Suggested: <code>sensor.outdoor_temperature</code> or <code>weather.home</code>.</p>
     </div>
   </div>
-  <p class="note">One brain writes every zone. Same occupancy, vacation, Boost, and comfort. Each zone has its own climate entity and night sliders. Cap is 8. Humidity is not used for setpoints, so it is not on this form.</p>
+  <p class="note">One Climate Brain controls every zone. They share occupancy, vacation, Boost, and comfort. Each zone still has its own thermostat entity and night temperatures. Maximum is 8 zones. Humidity is not used, so it is not on this form.</p>
   <div id="zone_inputs" class="grid"></div>
-  <div class="check"><input type="checkbox" id="independent" checked /><label for="independent" style="margin:0">Each zone has its own comfort / away / Boost / night (recommended). Uncheck to make zones 3+ follow zone 2.</label></div>
-  <p class="hint">Heat vs cool still stays house-wide. One outdoor unit should not heat one zone and cool another.</p>
+  <div class="check"><input type="checkbox" id="independent" checked /><label for="independent" style="margin:0">Each zone has its own comfort, away, Boost, and night temperatures (recommended). Uncheck this if zones 3 and up should copy zone 2.</label></div>
+  <p class="hint">Heat vs cool is still one choice for the whole house. One outdoor unit should not heat one zone and cool another at the same time.</p>
 
-  <h2>Presence</h2>
-  <p class="note">Climate Brain does <strong>not</strong> create occupancy. You paste an existing Home Assistant <code>binary_sensor</code> that is <code>on</code> when anyone is home and <code>off</code> when the house is empty. Do not use a car or Tesla.</p>
+  <h2>Who is home</h2>
+  <p class="note">Climate Brain does <strong>not</strong> make this sensor for you. Paste a Home Assistant <code>binary_sensor</code> that is <code>on</code> when anyone is home and <code>off</code> when the house is empty. Use people or phones, not a car or Tesla.</p>
   <ol class="note" style="padding-left:1.2rem">
-    <li>In Home Assistant: Settings → Devices &amp; services → Helpers → Create helper.</li>
-    <li>Choose <strong>Group</strong> → Binary sensor group (if you already have on/off presence sensors), or <strong>Template</strong> → Binary sensor.</li>
-    <li>Name it <code>Home occupancy</code>. After save, the entity ID is usually <code>binary_sensor.home_occupancy</code>.</li>
-    <li>Template example (People → each person entity): <code>{{ is_state('person.you','home') or is_state('person.partner','home') }}</code></li>
-    <li>Confirm in Developer tools → States that it flips on/off when you leave and arrive. Paste that entity ID below.</li>
+    <li>In Home Assistant go to Settings → Devices &amp; services → Helpers → Create helper.</li>
+    <li>Pick <strong>Group</strong> → Binary sensor group if you already have on/off presence sensors. Or pick <strong>Template</strong> → Binary sensor.</li>
+    <li>Name it <code>Home occupancy</code>. After you save, the ID is usually <code>binary_sensor.home_occupancy</code>.</li>
+    <li>Template example using People: <code>{{ is_state('person.you','home') or is_state('person.partner','home') }}</code></li>
+    <li>In Developer tools → States, check that it turns on when you arrive and off when you leave. Paste that ID below.</li>
   </ol>
-  <label>Occupancy binary sensor (on = someone home)</label>
+  <label>Occupancy sensor (on = someone is home)</label>
   <div class="entity-row">
     <input id="occupancy" value="" placeholder="binary_sensor.home_occupancy" autocomplete="off" />
     <button type="button" class="ghost" data-fill="occupancy" data-val="binary_sensor.home_occupancy">Use default</button>
   </div>
-  <p class="hint">Suggested name: <code>binary_sensor.home_occupancy</code>. Tap Use default only if you already created a helper with that ID.</p>
+  <p class="hint">Suggested ID: <code>binary_sensor.home_occupancy</code>. Tap Use default only if you already made a helper with that exact ID.</p>
 
-  <h2>Travel / arrival precool (optional)</h2>
-  <p class="note">Skip this if you only use occupancy. Then Phase 2 stays off. If you want precool, each traveler needs a direction entity whose state contains <code>toward</code> when heading home, and a travel-minutes entity. Leave the entity boxes empty and paste IDs from Developer tools → States. Use default only fills a suggested name (you still have to create those sensors in HA). iOS is not required.</p>
-  <div class="check"><input type="checkbox" id="want_travel" /><label for="want_travel" style="margin:0">I have direction + ETA sensors</label></div>
+  <h2>Travel / start cooling or heating before you arrive (optional)</h2>
+  <p class="note">Skip this if you only care about who is home. Then arrival precool stays off. If you want the house ready before you get there, each traveler needs two sensors: one whose state includes <code>toward</code> when they are heading home, and one for minutes left. Leave the boxes empty and paste IDs from Developer tools → States. Use default only types a suggested name. You still have to create those sensors in Home Assistant. An iPhone is not required.</p>
+  <div class="check"><input type="checkbox" id="want_travel" /><label for="want_travel" style="margin:0">I have direction and travel-time sensors</label></div>
   <div id="travelbox" style="display:none">
     <div class="row"><strong>Travelers</strong><button class="ghost" type="button" id="add">Add person</button></div>
     <div id="people"></div>
   </div>
 
   <h2>Tesla (optional, travel only)</h2>
-  <p class="note">Tesla is never occupancy. Do not OR cars into the occupancy binary sensor. Empty destination is not automatically away. Direction is toward | away | inhome: location home (driveway) is inhome; route/dest matching home plus TTA&gt;0 is toward; no usable nav uses falling distance() to zone.home (80 m hysteresis); nav dest not home is away. Occupied house never starts precool. Skip this if you have no Tesla integration.</p>
-  <div class="check"><input type="checkbox" id="want_tesla" /><label for="want_tesla" style="margin:0">Use Tesla for arrival precool (travel / ETA only)</label></div>
+  <p class="note">A Tesla is only used to guess that someone is on the way home. It never counts as “someone is in the house.” Do not add a car to the occupancy sensor.</p>
+  <ul class="note" style="padding-left:1.2rem">
+    <li>If the car is at home (driveway), that is <code>inhome</code>. Not travel.</li>
+    <li>If navigation is set to home and minutes-to-arrival is a real number, that is <code>toward</code> home.</li>
+    <li>If navigation is set somewhere else, that is <code>away</code>.</li>
+    <li>If no destination is loaded (you know the way), Climate Brain watches whether the car is getting closer to home. About 80 meters closer counts as <code>toward</code>. Farther counts as <code>away</code>.</li>
+    <li>Precool never starts while someone is already home.</li>
+  </ul>
+  <p class="note">Skip this section if Tesla is not in Home Assistant.</p>
+  <div class="check"><input type="checkbox" id="want_tesla" /><label for="want_tesla" style="margin:0">Use Tesla only to help start heating or cooling before arrival</label></div>
   <div id="teslabox" style="display:none">
-    <label>What means heading home? (matched inside the destination sensor)</label>
+    <label>What word means “heading home” in the destination sensor?</label>
     <div class="entity-row">
       <input id="tesla_home" value="" placeholder="home" autocomplete="off" />
       <button type="button" class="ghost" data-fill="tesla_home" data-val="home">Use default</button>
     </div>
-    <p class="hint">Suggested: <code>home</code> or your street from the Tesla destination sensor. Do not put Tesla in occupancy.</p>
+    <p class="hint">Suggested: <code>home</code>, or a street name from the Tesla destination sensor. Do not put Tesla in occupancy.</p>
     <div class="row"><strong>Vehicles</strong><button class="ghost" type="button" id="add_tesla">Add vehicle</button></div>
     <div id="teslas"></div>
   </div>
 
   <h2>Temperatures (°F)</h2>
-  <p class="note">Occupied / night / late hold use heat_cool dual setpoints. Empty, Boost, vacation, and precool use one latched heat or cool target.</p>
+  <p class="note">When people are home, at night, or in a late-arrival hold, Climate Brain uses heat and cool together (two temperatures). When the house is empty, in Boost, on vacation, or in precool, it uses one heat or one cool target, not both.</p>
   <div class="grid3">
-    <div><label>Comfort heat (home)</label><input id="c_heat" type="number" step="0.5" value="71" /></div>
-    <div><label>Comfort cool (home)</label><input id="c_cool" type="number" step="0.5" value="74" /></div>
+    <div><label>Comfort heat (someone home)</label><input id="c_heat" type="number" step="0.5" value="71" /></div>
+    <div><label>Comfort cool (someone home)</label><input id="c_cool" type="number" step="0.5" value="74" /></div>
     <div><label>Away heat</label><input id="a_heat" type="number" step="0.5" value="65" /></div>
     <div><label>Away cool</label><input id="a_cool" type="number" step="0.5" value="78" /></div>
     <div><label>Boost heat</label><input id="b_heat" type="number" step="0.5" value="73" /></div>
@@ -161,17 +169,17 @@
   <div id="night_inputs" class="grid"></div>
 
   <h2>Clock (local time)</h2>
-  <p class="note">Sleep, morning wake, and day-start are yours. Zone 2 can wake earlier than Zone 1. These become <code>input_datetime</code> helpers so you can still tweak them in HA.</p>
+  <p class="note">Set bedtime, morning wake, and when daytime starts. Zone 2 can wake earlier than Zone 1. These become time helpers, so you can still change them in Home Assistant later.</p>
   <div class="grid">
-    <div><label>Night / sleep start</label><input id="clk_night" type="time" value="22:30" /></div>
+    <div><label>Night / bedtime</label><input id="clk_night" type="time" value="22:30" /></div>
     <div><label>Morning Zone 2</label><input id="clk_z2" type="time" value="05:15" /></div>
     <div><label>Morning Zone 1</label><input id="clk_z1" type="time" value="05:45" /></div>
-    <div><label>Day start (morning window ends)</label><input id="clk_day" type="time" value="06:15" /></div>
+    <div><label>Day start (morning ends)</label><input id="clk_day" type="time" value="06:15" /></div>
   </div>
 
   <h2>Vacation</h2>
   <div class="check"><input type="checkbox" id="want_vac" checked /><label for="want_vac" style="margin:0">Include a Vacation button on the dashboard</label></div>
-  <p class="note">The helper always exists in the package. If you skip the button, leave it off. Vacation on = empty-house setpoints until someone is really home.</p>
+  <p class="note">The vacation switch always exists in the package. If you hide the dashboard button, leave that switch off. Vacation on uses the empty-house temperatures until someone is really home.</p>
   <div class="grid" id="vacnums">
     <div><label>Vacation heat</label><input id="v_heat" type="number" step="0.5" value="55" /></div>
     <div><label>Vacation cool</label><input id="v_cool" type="number" step="0.5" value="80" /></div>
@@ -186,22 +194,22 @@
     <button class="ghost" type="button" id="copy_dash">Copy dashboard</button>
   </div>
   <h2>Chaos checker</h2>
-  <p class="note">Runs automatically after Generate. Presence flicker vs real leave, occupancy unknown never Away, travel toward/away + ETA hysteresis, outdoor 64/65/66 latch, YAML integrity. Do not install a FAIL package.</p>
-  <pre id="out_chaos">Generate to run the checker.</pre>
+  <p class="note">This test runs after you click Generate. It checks a short occupancy flicker vs a real leave, unknown occupancy never switching to Away, travel toward/away, and outdoor 64 / 65 / 66. Do not install the file if the checker says FAIL.</p>
+  <pre id="out_chaos">Click Generate to run the checker.</pre>
   <h2>Package</h2>
-  <pre id="out_pkg">Generate to see YAML.</pre>
+  <pre id="out_pkg">Click Generate to see the YAML file.</pre>
   <h2>Dashboard cards</h2>
   <pre id="out_dash"></pre>
   <footer class="note" style="margin-top:40px">
-    Attributes: <strong>GrokAI</strong>. Temperature presets inspired by Versatile Thermostat.
-    Climate Brain is a generator, not a second thermostat. Delete other writers completely before install.
+    Credit: <strong>GrokAI</strong>. Temperature names inspired by Versatile Thermostat.
+    Climate Brain builds a file. It is not a second thermostat. Delete other controllers completely before you install.
   </footer>
   <div id="gate" role="dialog" aria-modal="true">
     <div class="sheet">
       <h2>Before you download</h2>
-      <p class="note">Both boxes are required. This is written into the YAML as a risk-accepted comment.</p>
-      <div class="check"><input type="checkbox" id="gate_removed" /><label for="gate_removed" style="margin:0">I have deleted every other thermostat / climate writer on these HVAC entities.</label></div>
-      <div class="check"><input type="checkbox" id="gate_risk" /><label for="gate_risk" style="margin:0">I understand the risks and use cases. I take full responsibility for deployment and safe setpoints. The creator is not responsible for damage to HVAC or Home Assistant.</label></div>
+      <p class="note">Check both boxes. A note is added to the YAML file saying you accepted the risk.</p>
+      <div class="check"><input type="checkbox" id="gate_removed" /><label for="gate_removed" style="margin:0">I deleted every other thermostat or climate program that was controlling these HVAC zones.</label></div>
+      <div class="check"><input type="checkbox" id="gate_risk" /><label for="gate_risk" style="margin:0">I understand the risks. I am responsible for installing this and for safe temperatures. The creator is not responsible for damage to the HVAC or Home Assistant.</label></div>
       <div class="actions">
         <button class="primary" type="button" id="gate_go">Confirm and continue</button>
         <button class="ghost" type="button" id="gate_cancel">Cancel</button>
@@ -209,7 +217,7 @@
     </div>
   </div>
 </main>
-<script src="./chaos.js?v=0.1.9"></script>
+<script src="./chaos.js?v=0.1.10"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -224,28 +232,28 @@ function personCard(p = {}) {
       <div><label>Name (logs / dashboard)</label><input data-k="name" value="${p.name || ""}" placeholder="Person" /></div>
       <div><label>Slug</label><input data-k="slug" value="${p.slug || ""}" placeholder="person" /></div>
       <div>
-        <label>Direction entity (state contains toward)</label>
+        <label>Direction sensor (state includes the word toward)</label>
         <div class="entity-row">
           <input data-k="dir" value="${p.dir || ""}" placeholder="sensor.person_direction" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="dir">Use default</button>
         </div>
-        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_direction</code></p>
+        <p class="hint">Suggested ID: <code>sensor.&lt;slug&gt;_direction</code></p>
       </div>
       <div>
-        <label>Travel minutes entity</label>
+        <label>Minutes-left sensor</label>
         <div class="entity-row">
           <input data-k="eta" value="${p.eta || ""}" placeholder="sensor.person_travel_time" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="eta">Use default</button>
         </div>
-        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_travel_time</code></p>
+        <p class="hint">Suggested ID: <code>sensor.&lt;slug&gt;_travel_time</code></p>
       </div>
       <div>
-        <label>Device tracker (optional)</label>
+        <label>Phone tracker (optional)</label>
         <div class="entity-row">
           <input data-k="tracker" value="${p.tracker || ""}" placeholder="device_tracker.person_phone" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="tracker">Use default</button>
         </div>
-        <p class="hint">Suggested: <code>device_tracker.&lt;slug&gt;_phone</code></p>
+        <p class="hint">Suggested ID: <code>device_tracker.&lt;slug&gt;_phone</code></p>
       </div>
     </div>`;
   wrap.querySelector("[data-rm]").onclick = () => wrap.remove();
@@ -272,44 +280,44 @@ function teslaCard(p = {}) {
       <div><label>Name</label><input data-k="name" value="${p.name || ""}" placeholder="Tesla" /></div>
       <div><label>Slug</label><input data-k="slug" value="${p.slug || ""}" placeholder="tesla" /></div>
       <div>
-        <label>Device tracker (logs only, never occupancy)</label>
+        <label>Car location tracker (for logs only, never occupancy)</label>
         <div class="entity-row">
           <input data-k="tracker" value="${p.tracker || ""}" placeholder="device_tracker.tesla" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="tracker">Use default</button>
         </div>
-        <p class="hint">Suggested: <code>device_tracker.&lt;slug&gt;</code></p>
+        <p class="hint">Suggested ID: <code>device_tracker.&lt;slug&gt;_location</code></p>
       </div>
       <div>
-        <label>Destination sensor (optional)</label>
+        <label>Navigation destination sensor (optional)</label>
         <div class="entity-row">
           <input data-k="dest" value="${p.dest || ""}" placeholder="sensor.tesla_destination" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="dest">Use default</button>
         </div>
-        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_destination</code>. Empty dest is not automatically away.</p>
+        <p class="hint">Suggested ID: <code>sensor.&lt;slug&gt;_destination</code>. An empty destination does not mean away by itself.</p>
       </div>
       <div>
-        <label>Route / destination tracker (optional)</label>
+        <label>Route / destination map pin (optional)</label>
         <div class="entity-row">
           <input data-k="route" value="${p.route || ""}" placeholder="device_tracker.tesla_route" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="route">Use default</button>
         </div>
-        <p class="hint">Suggested: <code>device_tracker.&lt;slug&gt;_route</code>. Used with dest for nav-home. Travel only, never occupancy.</p>
+        <p class="hint">Suggested ID: <code>device_tracker.&lt;slug&gt;_route</code>. Used to see if navigation is pointed at home. Travel only, never occupancy.</p>
       </div>
       <div>
-        <label>Minutes to arrival / travel time</label>
+        <label>Minutes to arrival</label>
         <div class="entity-row">
           <input data-k="eta" value="${p.eta || ""}" placeholder="sensor.tesla_time_to_arrival" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="eta">Use default</button>
         </div>
-        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_time_to_arrival</code></p>
+        <p class="hint">Suggested ID: <code>sensor.&lt;slug&gt;_time_to_arrival</code></p>
       </div>
       <div>
-        <label>Existing toward entity (optional)</label>
+        <label>Existing toward/away sensor (optional)</label>
         <div class="entity-row">
           <input data-k="toward" value="${p.toward || ""}" placeholder="sensor.tesla_direction" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="toward">Use default</button>
         </div>
-        <p class="hint">Leave empty to stamp toward | away | inhome from location, route/dest, TTA, and distance() to zone.home.</p>
+        <p class="hint">Leave empty and Climate Brain will figure out toward, away, or inhome from location, route, minutes-to-arrival, and distance to home.</p>
       </div>
     </div>`;
   wrap.querySelector("[data-rm]").onclick = () => wrap.remove();
@@ -355,7 +363,7 @@ function paintZones() {
         <input id="${zid}" value="${prevZ[zid] || ""}" placeholder="${zdef}" autocomplete="off" />
         <button type="button" class="ghost" data-fill="${zid}" data-val="${zdef}">Use default</button>
       </div>
-      <p class="hint">From Developer tools → States, filter <code>climate.</code> Suggested name: <code>${zdef}</code>.</p>`;
+      <p class="hint">In Developer tools → States, search <code>climate.</code> Suggested ID: <code>${zdef}</code>.</p>`;
     zbox.appendChild(wrap);
     const dh = i === 1 ? "64" : "65";
     const dc = i === 1 ? "76" : "72";
@@ -522,7 +530,7 @@ function readTesla() {
 }
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template?v=0.1.9").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.10").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
@@ -560,7 +568,7 @@ function dashboardYaml(cfg) {
     });
     travel = "\n" + indent(ents);
   }
-  const editor = ["- type: entities", "  title: Zone editor — pick zone, edit, Save overwrites that zone", "  show_header_toggle: false", "  entities:",
+  const editor = ["- type: entities", "  title: Zone editor — pick a zone, change the numbers, Save overwrites that zone", "  show_header_toggle: false", "  entities:",
     "    - input_select.climate_brain_edit_zone",
     "    - input_number.climate_brain_edit_comfort_heat",
     "    - input_number.climate_brain_edit_comfort_cool",
@@ -581,10 +589,10 @@ function dashboardYaml(cfg) {
     "  tap_action:",
     "    action: toggle",
     "    confirmation:",
-    '      text: "Disconnect Climate Brain? It will stop writing the Trane zones. The HVAC keeps running on the Trane / Nexia thermostat schedule. Last setpoints stay until that schedule or a wall unit changes them."'];
-  return `# Climate Brain 1.4.1 dashboard — paste as a Lovelace dashboard (raw editor).
-# Stock cards. Occupancy is your entity; Climate Brain does not create it.
-# Tesla is travel only. HVAC connection tile confirms disconnect.
+    '      text: "Disconnect Climate Brain? It will stop changing the thermostats. The HVAC keeps running on the Trane / Nexia thermostat schedule. The last temperatures stay until that schedule or a wall control changes them."'];
+  return `# Climate Brain 1.4.1 dashboard — paste this as a Lovelace dashboard (raw editor).
+# Built-in cards only. Occupancy is your sensor; Climate Brain does not create it.
+# Tesla is travel only. The HVAC tile asks before you disconnect.
 
 title: Climate
 views:
@@ -676,7 +684,7 @@ function render() {
     .replaceAll("__TESLA_TRAVEL_TRIGGERS__", tesla.triggers)
     .replaceAll("__TESLA_DIST_UPDATE__", tesla.distUpdate);
   if (yaml.includes("__Z1__") || yaml.includes("__OCCUPANCY__") || yaml.includes("__PEOPLE_ETA") || yaml.includes("__INIT_")) {
-    alert("Template still has placeholders.");
+    alert("The template still has blank placeholders. Check the form.");
   }
   const dash = dashboardYaml({
     n: nz,
@@ -723,7 +731,7 @@ function download(name, text) {
 }
 function integrityMessage() {
   const n = parseInt(v("nzones") || "2", 10);
-  return "Software integrity checks are running. This may take a while depending on the number of zones (" + n + ").";
+  return "Checking your file. This can take a minute if you have many zones (" + n + ").";
 }
 function showIntegrityRunning() {
   const msg = integrityMessage();
@@ -745,7 +753,7 @@ let lastResult = null;
 function generateThen(cb) {
   const missing = requiredEntities();
   if (missing.length) {
-    alert("Fill these entity fields, or tap Use default:\n• " + missing.join("\n• "));
+    alert("Fill these fields, or tap Use default:\n• " + missing.join("\n• "));
     return;
   }
   showIntegrityRunning();
