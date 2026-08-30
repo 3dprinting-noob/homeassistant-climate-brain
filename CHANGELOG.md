@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.12 — 2026-08-30
+
+- Chaos checker: HVAC enabled on the confirming tile no longer fails "raw enabled switch". The old check matched from the Brain card through the whole dashboard.
+
 ## 0.1.11 — 2026-08-30
 
 - Wizard: after Generate / Download, install steps for `config/packages/climate_brain.yaml` and the `packages:` / `logger:` lines in `configuration.yaml`.

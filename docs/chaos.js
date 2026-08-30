@@ -55,7 +55,9 @@
     if (cfg.dashboard) {
       const d = cfg.dashboard;
       fail("dashboard HVAC confirmation", d.includes("Disconnect Climate Brain?") && d.includes("Trane / Nexia thermostat schedule"), "tile tap confirmation");
-      fail("dashboard no raw enabled switch", !/title: Brain[\s\S]*input_boolean\.climate_brain_enabled/.test(d), "enabled only on confirming tile");
+      const brainCard = (d.split(/title:\s*Brain/)[1] || "").split(/title:\s*/)[0];
+      fail("dashboard no raw enabled switch", !brainCard.includes("input_boolean.climate_brain_enabled"), "enabled only on confirming tile");
+      fail("dashboard enabled is confirming tile", /type:\s*tile[\s\S]{0,80}input_boolean\.climate_brain_enabled[\s\S]{0,400}confirmation:/.test(d), "tile tap confirmation");
       fail("dashboard no HVAC on/off buttons", !d.includes("climate_brain_hvac_on") && !d.includes("climate_brain_hvac_off"), "slider not buttons");
     }
     const n = toMin(cfg.clock.night), z2 = toMin(cfg.clock.z2), z1 = toMin(cfg.clock.z1), day = toMin(cfg.clock.day);

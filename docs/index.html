@@ -237,7 +237,7 @@ logger:
     </div>
   </div>
 </main>
-<script src="./chaos.js?v=0.1.11"></script>
+<script src="./chaos.js?v=0.1.12"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -550,7 +550,7 @@ function readTesla() {
 }
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template?v=0.1.11").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.12").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
