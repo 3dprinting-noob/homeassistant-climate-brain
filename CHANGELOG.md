@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.11 — 2026-08-30
+
+- Wizard: after Generate / Download, install steps for `config/packages/climate_brain.yaml` and the `packages:` / `logger:` lines in `configuration.yaml`.
+
 ## 0.1.10 — 2026-08-30
 
 - Wizard and docs copy: grammar pass, written so a 10th grader can follow it. HVAC logic unchanged.

@@ -193,6 +193,26 @@
     <button class="ghost" type="button" id="copy_pkg">Copy package</button>
     <button class="ghost" type="button" id="copy_dash">Copy dashboard</button>
   </div>
+  <h2>Where to put the files</h2>
+  <p class="note">Do this after Generate says INSTALL OK. Delete other thermostat programs first.</p>
+  <ol class="note" style="padding-left:1.2rem">
+    <li>On the computer that runs Home Assistant, make a folder named <code>packages</code> inside <code>config</code> if it is not there already. Full path: <code>config/packages/</code>.</li>
+    <li>Save the package as <code>config/packages/climate_brain.yaml</code> (Download package or Copy package). Do not leave two Climate Brain files in that folder.</li>
+    <li>Open <code>config/configuration.yaml</code> and add this if it is not already there. Indentation matters. Do not paste this inside another section:</li>
+  </ol>
+  <pre>homeassistant:
+  packages: !include_dir_named packages
+
+logger:
+  default: warning
+  logs:
+    climate_brain: info</pre>
+  <ol class="note" style="padding-left:1.2rem" start="4">
+    <li>Dashboard: in Home Assistant go to Settings → Dashboards → add or open Climate → Edit dashboard → three dots → Raw configuration editor. Replace everything with the dashboard YAML (Download dashboard or Copy dashboard). Save.</li>
+    <li>Do a <strong>full Home Assistant restart</strong>. Reloading YAML is not enough.</li>
+    <li>If Home Assistant offers to Migrate package automations, do not click Migrate.</li>
+  </ol>
+  <p class="hint">If packages are already enabled in <code>configuration.yaml</code>, you only add the Climate Brain file and the <code>logger:</code> lines. Then restart.</p>
   <h2>Chaos checker</h2>
   <p class="note">This test runs after you click Generate. It checks a short occupancy flicker vs a real leave, unknown occupancy never switching to Away, travel toward/away, and outdoor 64 / 65 / 66. Do not install the file if the checker says FAIL.</p>
   <pre id="out_chaos">Click Generate to run the checker.</pre>
@@ -217,7 +237,7 @@
     </div>
   </div>
 </main>
-<script src="./chaos.js?v=0.1.10"></script>
+<script src="./chaos.js?v=0.1.11"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -530,7 +550,7 @@ function readTesla() {
 }
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template?v=0.1.10").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.11").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
