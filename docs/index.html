@@ -26,6 +26,9 @@
     .ghost { background: transparent; color: var(--fg); border: 1px solid var(--bd); }
     .danger { background: transparent; color: #f88; }
     pre { white-space: pre-wrap; word-break: break-word; background: #0d0d0d; border: 1px solid var(--bd); border-radius: 12px; padding: 12px; max-height: 360px; overflow: auto; font-size: 12px; }
+    #out_chaos .pass { color: #5ee089; }
+    #out_chaos .fail { color: #ff5c5c; }
+    #out_chaos .run { color: #18bcf2; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
     .check { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
     #integrity { display: none; position: sticky; top: 8px; z-index: 20; background: #16324a; color: #f4f4f4; border: 1px solid var(--acc); border-radius: 10px; padding: 12px 14px; margin: 12px 0; font-weight: 600; }
@@ -396,11 +399,23 @@ function render() {
   };
   let report = { pass: 0, fail: 1, verdict: "checker missing", rows: [] };
   if (window.ClimateBrainChaos) report = ClimateBrainChaos.run(yaml, cfg);
-  const lines = [report.verdict, report.pass + " pass / " + report.fail + " fail", ""].concat(report.rows.map(r => (r.ok ? "PASS  " : "FAIL  ") + r.name + " — " + r.detail));
-  document.getElementById("out_chaos").textContent = lines.join("\n");
-  document.getElementById("out_chaos").style.color = report.fail ? "#f88" : "#8f8";
+  paintChaos(report);
   if (report.fail) alert(report.verdict);
   return { pkg: yaml, dash, chaos: report };
+}
+function paintChaos(report) {
+  const out = document.getElementById("out_chaos");
+  out.style.color = "";
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const line = (cls, text) => '<div class="' + cls + '">' + esc(text) + "</div>";
+  const bits = [
+    line(report.fail ? "fail" : "pass", report.verdict),
+    line(report.fail ? "fail" : "pass", report.pass + " pass / " + report.fail + " fail"),
+  ];
+  report.rows.forEach(r => {
+    bits.push(line(r.ok ? "pass" : "fail", (r.ok ? "PASS  " : "FAIL  ") + r.name + " — " + r.detail));
+  });
+  out.innerHTML = bits.join("");
 }
 function download(name, text) {
   const a = document.createElement("a");
@@ -418,8 +433,9 @@ function showIntegrityRunning() {
   banner.textContent = msg;
   banner.classList.add("run");
   const out = document.getElementById("out_chaos");
-  out.textContent = msg;
-  out.style.color = "#18bcf2";
+  out.style.color = "";
+  out.innerHTML = '<div class="run"></div>';
+  out.firstChild.textContent = msg;
   ["gen", "dl_pkg", "dl_dash", "copy_pkg", "copy_dash"].forEach(id => document.getElementById(id).disabled = true);
   banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
