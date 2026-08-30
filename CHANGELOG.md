@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — 2026-08-30
+
+- Humidity removed from the wizard (it never drove setpoints; not floor-based).
+- Entity fields start empty (zones, occupancy, outdoor, travel sensors). Each has a Use default button with a suggested name.
+- Occupancy how-to: Climate Brain does not create the binary sensor; Helpers + Developer tools steps are on the form.
+
 ## 0.1.1 — 2026-08-30
 
 - Install: delete other thermostat controllers completely (VTherm, Generic Thermostat, HVAC app Auto schedule, old climate automations).

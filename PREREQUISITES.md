@@ -17,13 +17,17 @@ Not required: Versatile Thermostat, Tesla, CAN bus, iPhone.
 
 ## Occupancy (required)
 
-A `binary_sensor` that is **on when people are home** and **off when the house is empty**. Climate Brain does not create this.
+Climate Brain does **not** create occupancy. You make a Home Assistant `binary_sensor` that is **on when people are home** and **off when the house is empty**, then paste its entity ID into the wizard.
 
-Works with: Android Companion, iOS / iCloud3, Person groups, BLE / ESPresence, alarm panel, or a template you already trust.
+How to make one:
 
-Do not OR cars (Tesla or otherwise) into occupancy.
+1. Settings → Devices & services → Helpers → Create helper.
+2. **Group** → Binary sensor group (if you already have on/off presence sensors), or **Template** → Binary sensor.
+3. Name it `Home occupancy`. The entity ID is usually `binary_sensor.home_occupancy`.
+4. Template example using People: `{{ is_state('person.you','home') or is_state('person.partner','home') }}`
+5. Developer tools → States: confirm it flips when you leave and arrive.
 
-If occupancy is `unknown`, the brain will not write Away.
+Do not OR cars (Tesla or otherwise) into occupancy. If occupancy is `unknown`, the brain will not write Away.
 
 ## Travel / arrival precool (optional)
 

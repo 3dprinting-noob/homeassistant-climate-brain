@@ -20,7 +20,7 @@ If two writers remain, the house oscillates.
 
 ## 1. Generate
 
-Open the [wizard](https://3dprinting-noob.github.io/homeassistant-climate-brain/) (or `docs/index.html`). Fill zones, occupancy, outdoor, temps, sleep/morning clocks, optional travel, optional vacation button.
+Open the [wizard](https://3dprinting-noob.github.io/homeassistant-climate-brain/) (or `docs/index.html`). Entity fields start empty. Paste your HA entity IDs, or tap **Use default** if you already created helpers with those names. Occupancy is a binary sensor you create in Helpers first (see [PREREQUISITES.md](PREREQUISITES.md)). Then fill temps, sleep/morning clocks, optional travel, optional vacation button.
 
 Click **Generate**. The chaos checker must report **INSTALL OK**. Do not download a FAIL package.
 

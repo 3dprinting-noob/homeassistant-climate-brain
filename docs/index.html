@@ -31,6 +31,10 @@
     #integrity { display: none; position: sticky; top: 8px; z-index: 20; background: #16324a; color: #f4f4f4; border: 1px solid var(--acc); border-radius: 10px; padding: 12px 14px; margin: 12px 0; font-weight: 600; }
     #integrity.run { display: block; }
     button:disabled { opacity: 0.45; cursor: wait; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin: 4px 0 0; }
+    .entity-row { display: flex; gap: 8px; align-items: stretch; }
+    .entity-row input { flex: 1; min-width: 0; }
+    .entity-row button { flex: 0 0 auto; white-space: nowrap; }
     @media (max-width: 700px) { .grid, .grid3 { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -55,22 +59,36 @@
         <option value="8">8</option>
       </select>
     </div>
-    <div><label>Outdoor temperature</label><input id="outdoor" value="sensor.outdoor_temperature" /></div>
+    <div>
+      <label>Outdoor temperature entity</label>
+      <div class="entity-row">
+        <input id="outdoor" value="" placeholder="sensor.outdoor_temperature" autocomplete="off" />
+        <button type="button" class="ghost" data-fill="outdoor" data-val="sensor.outdoor_temperature">Use default</button>
+      </div>
+      <p class="hint">Leave empty and type the entity from HA (Developer tools → States, filter <code>sensor.</code>). Suggested name: <code>sensor.outdoor_temperature</code>.</p>
+    </div>
   </div>
-  <p class="note">One brain writes every zone. Same occupancy, vacation, Boost, and comfort. Each zone has its own climate entity and night sliders. Cap is 8.</p>
+  <p class="note">One brain writes every zone. Same occupancy, vacation, Boost, and comfort. Each zone has its own climate entity and night sliders. Cap is 8. Humidity is not used for setpoints, so it is not on this form.</p>
   <div id="zone_inputs" class="grid"></div>
-  <div class="grid">
-    <div><label>Humidity A (optional)</label><input id="hum_a" placeholder="sensor.upstairs_humidity" /></div>
-    <div><label>Humidity B (optional)</label><input id="hum_b" placeholder="sensor.bedroom_humidity" /></div>
-  </div>
 
   <h2>Presence</h2>
-  <p class="note">Climate Brain does not care how you decide someone is home. Pass any <code>binary_sensor</code> that is on when people are home and off when the house is empty: iOS, Android Companion, a Person group, BLE, alarm panel, or a template you already maintain. Do not OR cars into it.</p>
-  <label>Occupancy (on = someone home)</label>
-  <input id="occupancy" value="binary_sensor.home_occupancy" />
+  <p class="note">Climate Brain does <strong>not</strong> create occupancy. You paste an existing Home Assistant <code>binary_sensor</code> that is <code>on</code> when anyone is home and <code>off</code> when the house is empty. Do not use a car or Tesla.</p>
+  <ol class="note" style="padding-left:1.2rem">
+    <li>In Home Assistant: Settings → Devices &amp; services → Helpers → Create helper.</li>
+    <li>Choose <strong>Group</strong> → Binary sensor group (if you already have on/off presence sensors), or <strong>Template</strong> → Binary sensor.</li>
+    <li>Name it <code>Home occupancy</code>. After save, the entity ID is usually <code>binary_sensor.home_occupancy</code>.</li>
+    <li>Template example (People → each person entity): <code>{{ is_state('person.you','home') or is_state('person.partner','home') }}</code></li>
+    <li>Confirm in Developer tools → States that it flips on/off when you leave and arrive. Paste that entity ID below.</li>
+  </ol>
+  <label>Occupancy binary sensor (on = someone home)</label>
+  <div class="entity-row">
+    <input id="occupancy" value="" placeholder="binary_sensor.home_occupancy" autocomplete="off" />
+    <button type="button" class="ghost" data-fill="occupancy" data-val="binary_sensor.home_occupancy">Use default</button>
+  </div>
+  <p class="hint">Suggested name: <code>binary_sensor.home_occupancy</code>. Tap Use default only if you already created a helper with that ID.</p>
 
   <h2>Travel / arrival precool (optional)</h2>
-  <p class="note">Skip this if you only use occupancy. Then Phase 2 stays off. If you want precool, each traveler needs a <em>direction</em> entity that contains <code>toward</code> when heading home, and a <em>travel minutes</em> entity. That can be iCloud3 on iPhone, Android Companion + a template, OwnTracks, GPSLogger, or anything else. The package never assumes iOS.</p>
+  <p class="note">Skip this if you only use occupancy. Then Phase 2 stays off. If you want precool, each traveler needs a direction entity whose state contains <code>toward</code> when heading home, and a travel-minutes entity. Leave the entity boxes empty and paste IDs from Developer tools → States. Use default only fills a suggested name (you still have to create those sensors in HA). iOS is not required.</p>
   <div class="check"><input type="checkbox" id="want_travel" /><label for="want_travel" style="margin:0">I have direction + ETA sensors</label></div>
   <div id="travelbox" style="display:none">
     <div class="row"><strong>Travelers</strong><button class="ghost" type="button" id="add">Add person</button></div>
@@ -138,11 +156,32 @@ function personCard(p = {}) {
   wrap.innerHTML = `
     <div class="row"><strong>Traveler</strong><button class="danger" type="button" data-rm>Remove</button></div>
     <div class="grid">
-      <div><label>Name (logs / dashboard)</label><input data-k="name" value="${p.name || ""}" placeholder="Alex" /></div>
-      <div><label>Slug</label><input data-k="slug" value="${p.slug || ""}" placeholder="alex" /></div>
-      <div><label>Direction entity (state contains toward)</label><input data-k="dir" value="${p.dir || ""}" placeholder="sensor.alex_direction" /></div>
-      <div><label>Travel minutes entity</label><input data-k="eta" value="${p.eta || ""}" placeholder="sensor.alex_travel_time" /></div>
-      <div><label>Device tracker (optional)</label><input data-k="tracker" value="${p.tracker || ""}" placeholder="device_tracker.alex_phone" /></div>
+      <div><label>Name (logs / dashboard)</label><input data-k="name" value="${p.name || ""}" placeholder="Person" /></div>
+      <div><label>Slug</label><input data-k="slug" value="${p.slug || ""}" placeholder="person" /></div>
+      <div>
+        <label>Direction entity (state contains toward)</label>
+        <div class="entity-row">
+          <input data-k="dir" value="${p.dir || ""}" placeholder="sensor.person_direction" autocomplete="off" />
+          <button type="button" class="ghost" data-fill-k="dir">Use default</button>
+        </div>
+        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_direction</code></p>
+      </div>
+      <div>
+        <label>Travel minutes entity</label>
+        <div class="entity-row">
+          <input data-k="eta" value="${p.eta || ""}" placeholder="sensor.person_travel_time" autocomplete="off" />
+          <button type="button" class="ghost" data-fill-k="eta">Use default</button>
+        </div>
+        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_travel_time</code></p>
+      </div>
+      <div>
+        <label>Device tracker (optional)</label>
+        <div class="entity-row">
+          <input data-k="tracker" value="${p.tracker || ""}" placeholder="device_tracker.person_phone" autocomplete="off" />
+          <button type="button" class="ghost" data-fill-k="tracker">Use default</button>
+        </div>
+        <p class="hint">Suggested: <code>device_tracker.&lt;slug&gt;_phone</code></p>
+      </div>
     </div>`;
   wrap.querySelector("[data-rm]").onclick = () => wrap.remove();
   const name = wrap.querySelector('[data-k="name"]');
@@ -174,7 +213,13 @@ function paintZones() {
   for (let i = 1; i <= n; i++) {
     const zid = "z" + i;
     const wrap = document.createElement("div");
-    wrap.innerHTML = `<label>Zone ${i} climate</label><input id="${zid}" value="${prevZ[zid] || ("climate.zone_" + i)}" />`;
+    const zdef = "climate.zone_" + i;
+    wrap.innerHTML = `<label>Zone ${i} climate entity</label>
+      <div class="entity-row">
+        <input id="${zid}" value="${prevZ[zid] || ""}" placeholder="${zdef}" autocomplete="off" />
+        <button type="button" class="ghost" data-fill="${zid}" data-val="${zdef}">Use default</button>
+      </div>
+      <p class="hint">From Developer tools → States, filter <code>climate.</code> Suggested name: <code>${zdef}</code>.</p>`;
     zbox.appendChild(wrap);
     const dh = i === 1 ? "64" : "65";
     const dc = i === 1 ? "76" : "72";
@@ -191,8 +236,32 @@ paintZones();
 document.getElementById("want_vac").onchange = (e) => {
   document.getElementById("vacnums").style.display = e.target.checked ? "" : "none";
 };
+document.addEventListener("click", (e) => {
+  const fill = e.target.closest("[data-fill]");
+  if (fill && fill.dataset.fill) {
+    const el = document.getElementById(fill.dataset.fill);
+    if (el) el.value = fill.dataset.val || "";
+    return;
+  }
+  const fk = e.target.closest("[data-fill-k]");
+  if (!fk) return;
+  const card = fk.closest(".person");
+  if (!card) return;
+  const slug = slugify(card.querySelector('[data-k="slug"]').value || card.querySelector('[data-k="name"]').value || "person");
+  const map = { dir: "sensor." + slug + "_direction", eta: "sensor." + slug + "_travel_time", tracker: "device_tracker." + slug + "_phone" };
+  const inp = card.querySelector('[data-k="' + fk.dataset.fillK + '"]');
+  if (inp) inp.value = map[fk.dataset.fillK] || "";
+});
 function v(id) { return document.getElementById(id).value.trim(); }
 function n(id) { return document.getElementById(id).value.trim(); }
+function requiredEntities() {
+  const missing = [];
+  if (!v("occupancy")) missing.push("occupancy binary sensor");
+  if (!v("outdoor")) missing.push("outdoor temperature");
+  const nz = parseInt(v("nzones") || "2", 10);
+  for (let i = 1; i <= nz; i++) if (!v("z" + i)) missing.push("zone " + i + " climate");
+  return missing;
+}
 function clockVal(id, def) {
   let x = v(id) || def;
   if (/^\d{2}:\d{2}$/.test(x)) x += ":00";
@@ -254,7 +323,7 @@ function render() {
   if (!TEMPLATE) { alert("Template not loaded yet"); return { pkg: "", dash: "" }; }
   const nz = parseInt(v("nzones") || "2", 10);
   const zones = [];
-  for (let i = 1; i <= nz; i++) zones.push(v("z" + i) || ("climate.zone_" + i));
+  for (let i = 1; i <= nz; i++) zones.push(v("z" + i));
   const z1 = zones[0];
   const z2 = zones[1] || z1;
   const two = nz >= 2;
@@ -279,10 +348,10 @@ function render() {
   let yaml = TEMPLATE
     .replaceAll("__Z1__", z1)
     .replaceAll("__Z2__", z2)
-    .replaceAll("__OCCUPANCY__", v("occupancy") || "binary_sensor.home_occupancy")
-    .replaceAll("__OUTDOOR__", v("outdoor") || "sensor.outdoor_temperature")
-    .replaceAll("__HUMIDITY_A__", v("hum_a") || "sensor.climate_brain_humidity_a_unused")
-    .replaceAll("__HUMIDITY_B__", v("hum_b") || "sensor.climate_brain_humidity_b_unused")
+    .replaceAll("__OCCUPANCY__", v("occupancy"))
+    .replaceAll("__OUTDOOR__", v("outdoor"))
+    .replaceAll("__HUMIDITY_A__", "sensor.climate_brain_humidity_a_unused")
+    .replaceAll("__HUMIDITY_B__", "sensor.climate_brain_humidity_b_unused")
     .replaceAll("__PHASE2_INITIAL__", travel ? "true" : "false")
     .replaceAll("__INIT_COMFORT_HEAT__", n("c_heat") || "71")
     .replaceAll("__INIT_COMFORT_COOL__", n("c_cool") || "74")
@@ -313,7 +382,7 @@ function render() {
   const dash = dashboardYaml({
     n: nz,
     zones,
-    occupancy: v("occupancy") || "binary_sensor.home_occupancy",
+    occupancy: v("occupancy"),
     people,
     vacation: document.getElementById("want_vac").checked,
     travel,
@@ -321,7 +390,7 @@ function render() {
   document.getElementById("out_pkg").textContent = yaml;
   document.getElementById("out_dash").textContent = dash;
   const cfg = {
-    zones, occupancy: v("occupancy") || "binary_sensor.home_occupancy", outdoor: v("outdoor") || "sensor.outdoor_temperature",
+    zones, occupancy: v("occupancy"), outdoor: v("outdoor"),
     clock: { night: v("clk_night") || "22:30", z2: v("clk_z2") || "05:15", z1: v("clk_z1") || "05:45", day: v("clk_day") || "06:15" },
     temps: { comfortHeat: n("c_heat") || "71", comfortCool: n("c_cool") || "74", awayHeat: n("a_heat") || "65", awayCool: n("a_cool") || "78", boostHeat: n("b_heat") || "73", boostCool: n("b_cool") || "70" },
   };
@@ -360,6 +429,11 @@ function hideIntegrityRunning() {
 }
 let lastResult = null;
 function generateThen(cb) {
+  const missing = requiredEntities();
+  if (missing.length) {
+    alert("Fill these entity fields, or tap Use default:\n• " + missing.join("\n• "));
+    return;
+  }
   showIntegrityRunning();
   // Two frames so the banner paints before the checker blocks the tab.
   requestAnimationFrame(() => requestAnimationFrame(() => {
