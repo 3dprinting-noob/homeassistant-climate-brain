@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Climate Brain generator</title>
+  <style>
+    :root { --bg:#111; --card:#1c1c1c; --fg:#f4f4f4; --muted:#9a9a9a; --acc:#18bcf2; --bd:#333; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+    main { max-width: 920px; margin: 0 auto; padding: 28px 16px 80px; }
+    h1 { font-size: 1.55rem; margin: 0 0 8px; }
+    h2 { font-size: 1.15rem; margin: 28px 0 8px; }
+    p.lead, .note { color: var(--muted); }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin: 12px 0 4px; }
+    input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--bd); border-radius: 8px; background: #0d0d0d; color: var(--fg); }
+    input[type=checkbox] { width: auto; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 12px; }
+    .person, .card { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    button { cursor: pointer; border: 0; border-radius: 8px; padding: 10px 14px; font-weight: 600; }
+    .primary { background: var(--acc); color: #04202a; }
+    .ghost { background: transparent; color: var(--fg); border: 1px solid var(--bd); }
+    .danger { background: transparent; color: #f88; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #0d0d0d; border: 1px solid var(--bd); border-radius: 12px; padding: 12px; max-height: 360px; overflow: auto; font-size: 12px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+    .check { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+    @media (max-width: 700px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Climate Brain v1.3.3</h1>
+  <p class="lead">Stamps a Home Assistant package for communicating HVAC zones. Occupancy is any on/off sensor. Travel is optional. Tesla is never occupancy.</p>
+
+  <h2>House</h2>
+  <div class="grid">
+    <div>
+      <label>How many zones?</label>
+      <select id="nzones">
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+      </select>
+    </div>
+    <div><label>Outdoor temperature</label><input id="outdoor" value="sensor.outdoor_temperature" /></div>
+  </div>
+  <p class="note">One brain writes every zone. Same occupancy, vacation, Boost, and comfort. Each zone has its own climate entity and night sliders. Cap is 8.</p>
+  <div id="zone_inputs" class="grid"></div>
+  <div class="grid">
+    <div><label>Humidity A (optional)</label><input id="hum_a" placeholder="sensor.upstairs_humidity" /></div>
+    <div><label>Humidity B (optional)</label><input id="hum_b" placeholder="sensor.bedroom_humidity" /></div>
+  </div>
+
+  <h2>Presence</h2>
+  <p class="note">Climate Brain does not care how you decide someone is home. Pass any <code>binary_sensor</code> that is on when people are home and off when the house is empty: iOS, Android Companion, a Person group, BLE, alarm panel, or a template you already maintain. Do not OR cars into it.</p>
+  <label>Occupancy (on = someone home)</label>
+  <input id="occupancy" value="binary_sensor.home_occupancy" />
+
+  <h2>Travel / arrival precool (optional)</h2>
+  <p class="note">Skip this if you only use occupancy. Then Phase 2 stays off. If you want precool, each traveler needs a <em>direction</em> entity that contains <code>toward</code> when heading home, and a <em>travel minutes</em> entity. That can be iCloud3 on iPhone, Android Companion + a template, OwnTracks, GPSLogger, or anything else. The package never assumes iOS.</p>
+  <div class="check"><input type="checkbox" id="want_travel" /><label for="want_travel" style="margin:0">I have direction + ETA sensors</label></div>
+  <div id="travelbox" style="display:none">
+    <div class="row"><strong>Travelers</strong><button class="ghost" type="button" id="add">Add person</button></div>
+    <div id="people"></div>
+  </div>
+
+  <h2>Temperatures (°F)</h2>
+  <p class="note">Occupied / night / late hold use heat_cool dual setpoints. Empty, Boost, vacation, and precool use one latched heat or cool target.</p>
+  <div class="grid3">
+    <div><label>Comfort heat (home)</label><input id="c_heat" type="number" step="0.5" value="71" /></div>
+    <div><label>Comfort cool (home)</label><input id="c_cool" type="number" step="0.5" value="74" /></div>
+    <div><label>Away heat</label><input id="a_heat" type="number" step="0.5" value="65" /></div>
+    <div><label>Away cool</label><input id="a_cool" type="number" step="0.5" value="78" /></div>
+    <div><label>Boost heat</label><input id="b_heat" type="number" step="0.5" value="73" /></div>
+    <div><label>Boost cool</label><input id="b_cool" type="number" step="0.5" value="70" /></div>
+  </div>
+  <div id="night_inputs" class="grid"></div>
+
+  <h2>Vacation</h2>
+  <div class="check"><input type="checkbox" id="want_vac" checked /><label for="want_vac" style="margin:0">Include a Vacation button on the dashboard</label></div>
+  <p class="note">The helper always exists in the package. If you skip the button, leave it off. Vacation on = empty-house setpoints until someone is really home.</p>
+  <div class="grid" id="vacnums">
+    <div><label>Vacation heat</label><input id="v_heat" type="number" step="0.5" value="55" /></div>
+    <div><label>Vacation cool</label><input id="v_cool" type="number" step="0.5" value="80" /></div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" type="button" id="gen">Generate</button>
+    <button class="ghost" type="button" id="dl_pkg">Download package</button>
+    <button class="ghost" type="button" id="dl_dash">Download dashboard</button>
+    <button class="ghost" type="button" id="copy_pkg">Copy package</button>
+    <button class="ghost" type="button" id="copy_dash">Copy dashboard</button>
+  </div>
+  <h2>Package</h2>
+  <pre id="out_pkg">Generate to see YAML.</pre>
+  <h2>Dashboard cards</h2>
+  <pre id="out_dash"></pre>
+</main>
+<script>
+const peopleEl = document.getElementById("people");
+function slugify(name) {
+  return (name || "person").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "person";
+}
+function personCard(p = {}) {
+  const wrap = document.createElement("div");
+  wrap.className = "person";
+  wrap.innerHTML = `
+    <div class="row"><strong>Traveler</strong><button class="danger" type="button" data-rm>Remove</button></div>
+    <div class="grid">
+      <div><label>Name (logs / dashboard)</label><input data-k="name" value="${p.name || ""}" placeholder="Alex" /></div>
+      <div><label>Slug</label><input data-k="slug" value="${p.slug || ""}" placeholder="alex" /></div>
+      <div><label>Direction entity (state contains toward)</label><input data-k="dir" value="${p.dir || ""}" placeholder="sensor.alex_direction" /></div>
+      <div><label>Travel minutes entity</label><input data-k="eta" value="${p.eta || ""}" placeholder="sensor.alex_travel_time" /></div>
+      <div><label>Device tracker (optional)</label><input data-k="tracker" value="${p.tracker || ""}" placeholder="device_tracker.alex_phone" /></div>
+    </div>`;
+  wrap.querySelector("[data-rm]").onclick = () => wrap.remove();
+  const name = wrap.querySelector('[data-k="name"]');
+  const slug = wrap.querySelector('[data-k="slug"]');
+  name.addEventListener("input", () => {
+    if (!slug.dataset.touched) slug.value = slugify(name.value);
+  });
+  slug.addEventListener("input", () => { slug.dataset.touched = "1"; });
+  peopleEl.appendChild(wrap);
+}
+document.getElementById("add").onclick = () => personCard();
+document.getElementById("want_travel").onchange = (e) => {
+  document.getElementById("travelbox").style.display = e.target.checked ? "block" : "none";
+  if (e.target.checked && !peopleEl.children.length) personCard();
+};
+function paintZones() {
+  const n = parseInt(document.getElementById("nzones").value, 10);
+  const zbox = document.getElementById("zone_inputs");
+  const nbox = document.getElementById("night_inputs");
+  const prevZ = {};
+  const prevH = {}, prevC = {};
+  zbox.querySelectorAll("input").forEach(i => { prevZ[i.id] = i.value; });
+  nbox.querySelectorAll("input").forEach(i => {
+    if (i.id.endsWith("h")) prevH[i.id] = i.value;
+    else prevC[i.id] = i.value;
+  });
+  zbox.innerHTML = "";
+  nbox.innerHTML = "";
+  for (let i = 1; i <= n; i++) {
+    const zid = "z" + i;
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `<label>Zone ${i} climate</label><input id="${zid}" value="${prevZ[zid] || ("climate.zone_" + i)}" />`;
+    zbox.appendChild(wrap);
+    const dh = i === 1 ? "64" : "65";
+    const dc = i === 1 ? "76" : "72";
+    const nh = document.createElement("div");
+    nh.innerHTML = `<label>Night Z${i} heat</label><input id="n${i}h" type="number" step="0.5" value="${prevH["n"+i+"h"] || dh}" />`;
+    const nc = document.createElement("div");
+    nc.innerHTML = `<label>Night Z${i} cool</label><input id="n${i}c" type="number" step="0.5" value="${prevC["n"+i+"c"] || dc}" />`;
+    nbox.appendChild(nh);
+    nbox.appendChild(nc);
+  }
+}
+document.getElementById("nzones").onchange = paintZones;
+paintZones();
+document.getElementById("want_vac").onchange = (e) => {
+  document.getElementById("vacnums").style.display = e.target.checked ? "" : "none";
+};
+function v(id) { return document.getElementById(id).value.trim(); }
+function n(id) { return document.getElementById(id).value.trim(); }
+function readPeople() {
+  if (!document.getElementById("want_travel").checked) return [];
+  return [...peopleEl.querySelectorAll(".person")].map(card => {
+    const g = k => card.querySelector(`[data-k="${k}"]`).value.trim();
+    return { name: g("name") || g("slug") || "person", slug: slugify(g("slug") || g("name")), dir: g("dir"), eta: g("eta"), tracker: g("tracker") };
+  }).filter(p => p.dir && p.eta);
+}
+
+let TEMPLATE = "";
+fetch("./climate_brain.yaml.template").then(r => {
+  if (!r.ok) throw new Error("Could not load template");
+  return r.text();
+}).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
+
+function dashboardYaml(cfg) {
+  const indent = (lines) => lines.map(l => "      " + l).join("\n");
+  const zoneCards = cfg.zones.map(z => indent(["- type: thermostat", "  entity: " + z])).join("\n");
+  const brain = ["- type: entities", "  title: Brain", "  show_header_toggle: false", "  entities:", "    - " + cfg.occupancy, "    - input_boolean.climate_brain_enabled"];
+  if (cfg.travel) brain.push("    - input_boolean.climate_brain_phase2");
+  if (cfg.vacation) brain.push("    - input_boolean.climate_brain_vacation", "    - input_number.climate_brain_vacation_heat", "    - input_number.climate_brain_vacation_cool");
+  brain.push("    - sensor.climate_brain_period", "    - input_text.climate_brain_status", "    - input_select.climate_brain_home_hvac", "    - input_select.climate_brain_latched_season");
+  const setp = ["- type: entities", "  title: Setpoints", "  show_header_toggle: false", "  entities:",
+    "    - input_number.climate_brain_comfort_heat", "    - input_number.climate_brain_comfort_cool",
+    "    - input_number.climate_brain_away_heat", "    - input_number.climate_brain_away_cool",
+    "    - input_number.climate_brain_boost_heat", "    - input_number.climate_brain_boost_cool",
+  ];
+  for (let i = 1; i <= cfg.n; i++) setp.push("    - input_number.night_z" + i + "_heat", "    - input_number.night_z" + i + "_cool");
+  let travel = "";
+  if (cfg.people.length) {
+    const ents = ["- type: entities", "  title: Travel", "  show_header_toggle: false", "  entities:"];
+    cfg.people.forEach(p => {
+      ents.push("    - type: section", "      label: " + p.name);
+      ents.push("    - " + p.dir, "    - " + p.eta);
+      if (p.tracker) ents.push("    - " + p.tracker);
+    });
+    travel = "\n" + indent(ents);
+  }
+  return `# Climate Brain dashboard — paste as a Lovelace dashboard (raw editor).
+# Stock cards. Occupancy is your entity; Climate Brain does not create it.
+
+title: Climate
+views:
+  - title: Climate
+    path: climate
+    cards:
+${zoneCards}
+${indent(brain)}
+${indent(setp)}${travel}
+`;
+}
+
+function render() {
+  if (!TEMPLATE) { alert("Template not loaded yet"); return { pkg: "", dash: "" }; }
+  const nz = parseInt(v("nzones") || "2", 10);
+  const zones = [];
+  for (let i = 1; i <= nz; i++) zones.push(v("z" + i) || ("climate.zone_" + i));
+  const z1 = zones[0];
+  const z2 = zones[1] || z1;
+  const two = nz >= 2;
+  const people = readPeople();
+  const travel = people.length > 0;
+  const pairs = people.map(p => `('${p.dir}', '${p.eta}')`).join(", ");
+  const dicts = people.map(p => {
+    const tr = p.tracker ? `'${p.tracker}'` : "''";
+    return `{'name': '${p.slug}', 'dir': '${p.dir}', 'eta': '${p.eta}', 'tracker': ${tr}}`;
+  }).join(", ");
+  const trigs = people.flatMap(p => [`          - ${p.eta}`, `          - ${p.dir}`]).join("\n");
+  const extra = { helpers: "", vars: "", writes: "", trigs: "" };
+  for (let i = 3; i <= nz; i++) {
+    const ent = zones[i - 1];
+    const nh = n("n" + i + "h") || "65";
+    const nc = n("n" + i + "c") || "72";
+    extra.helpers += `  night_z${i}_heat:\n    name: Night Zone ${i} heat\n    min: 60\n    max: 70\n    step: 0.5\n    initial: ${nh}\n    mode: slider\n    unit_of_measurement: "°F"\n    icon: mdi:thermometer-low\n  night_z${i}_cool:\n    name: Night Zone ${i} cool\n    min: 68\n    max: 76\n    step: 0.5\n    initial: ${nc}\n    mode: slider\n    unit_of_measurement: "°F"\n    icon: mdi:snowflake-thermometer\n`;
+    extra.vars += `          z${i}_heat_sp: >-\n            {% if period == 'night' %}\n              {{ states('input_number.night_z${i}_heat') | float(${nh}) }}\n            {% else %}\n              {{ z2_heat_sp }}\n            {% endif %}\n          z${i}_cool_sp: >-\n            {% if period == 'night' %}\n              {{ states('input_number.night_z${i}_cool') | float(${nc}) }}\n            {% else %}\n              {{ z2_cool_sp }}\n            {% endif %}\n`;
+    extra.writes += `      - action: script.climate_brain_write_zone\n        continue_on_error: true\n        data:\n          climate_entity: ${ent}\n          hvac_mode: "{{ z2_hvac }}"\n          kind: "{{ z2_kind }}"\n          temperature: "{{ iif(z2_hvac == 'cool', z${i}_cool_sp, z${i}_heat_sp) }}"\n          target_temp_low: "{{ z${i}_heat_sp }}"\n          target_temp_high: "{{ z${i}_cool_sp }}"\n`;
+    extra.trigs += `          - input_number.night_z${i}_heat\n          - input_number.night_z${i}_cool\n`;
+  }
+  let yaml = TEMPLATE
+    .replaceAll("__Z1__", z1)
+    .replaceAll("__Z2__", z2)
+    .replaceAll("__OCCUPANCY__", v("occupancy") || "binary_sensor.home_occupancy")
+    .replaceAll("__OUTDOOR__", v("outdoor") || "sensor.outdoor_temperature")
+    .replaceAll("__HUMIDITY_A__", v("hum_a") || "sensor.climate_brain_humidity_a_unused")
+    .replaceAll("__HUMIDITY_B__", v("hum_b") || "sensor.climate_brain_humidity_b_unused")
+    .replaceAll("__PHASE2_INITIAL__", travel ? "true" : "false")
+    .replaceAll("__INIT_COMFORT_HEAT__", n("c_heat") || "71")
+    .replaceAll("__INIT_COMFORT_COOL__", n("c_cool") || "74")
+    .replaceAll("__INIT_AWAY_HEAT__", n("a_heat") || "65")
+    .replaceAll("__INIT_AWAY_COOL__", n("a_cool") || "78")
+    .replaceAll("__INIT_BOOST_HEAT__", n("b_heat") || "73")
+    .replaceAll("__INIT_BOOST_COOL__", n("b_cool") || "70")
+    .replaceAll("__INIT_NIGHT_Z1_HEAT__", n("n1h") || "64")
+    .replaceAll("__INIT_NIGHT_Z1_COOL__", n("n1c") || "76")
+    .replaceAll("__INIT_NIGHT_Z2_HEAT__", two ? (n("n2h") || "65") : (n("n1h") || "64"))
+    .replaceAll("__INIT_NIGHT_Z2_COOL__", two ? (n("n2c") || "72") : (n("n1c") || "76"))
+    .replaceAll("__INIT_VAC_HEAT__", n("v_heat") || "55")
+    .replaceAll("__INIT_VAC_COOL__", n("v_cool") || "80")
+    .replaceAll("__PEOPLE_ETA_PAIRS__", pairs)
+    .replaceAll("__PEOPLE_PHONE_DICTS__", dicts)
+    .replaceAll("__PEOPLE_TRAVEL_TRIGGERS__", trigs)
+    .replaceAll("__EXTRA_NIGHT_HELPERS__", extra.helpers)
+    .replaceAll("__EXTRA_ZONE_VARS__", extra.vars)
+    .replaceAll("__EXTRA_ZONE_WRITES__", extra.writes)
+    .replaceAll("__EXTRA_NIGHT_TRIGGERS__", extra.trigs);
+  if (yaml.includes("__Z1__") || yaml.includes("__OCCUPANCY__") || yaml.includes("__PEOPLE_ETA") || yaml.includes("__INIT_")) {
+    alert("Template still has placeholders.");
+  }
+  const dash = dashboardYaml({
+    n: nz,
+    zones,
+    occupancy: v("occupancy") || "binary_sensor.home_occupancy",
+    people,
+    vacation: document.getElementById("want_vac").checked,
+    travel,
+  });
+  document.getElementById("out_pkg").textContent = yaml;
+  document.getElementById("out_dash").textContent = dash;
+  return { pkg: yaml, dash };
+}
+function download(name, text) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "text/yaml" }));
+  a.download = name;
+  a.click();
+}
+document.getElementById("gen").onclick = render;
+document.getElementById("dl_pkg").onclick = () => { const r = render(); if (r.pkg.startsWith("#")) download("climate_brain.yaml", r.pkg); };
+document.getElementById("dl_dash").onclick = () => { const r = render(); if (r.dash.startsWith("#")) download("climate_brain_dashboard.yaml", r.dash); };
+document.getElementById("copy_pkg").onclick = async () => {
+  const t = document.getElementById("out_pkg").textContent;
+  if (!t.startsWith("#")) { alert("Generate first"); return; }
+  await navigator.clipboard.writeText(t);
+};
+document.getElementById("copy_dash").onclick = async () => {
+  const t = document.getElementById("out_dash").textContent;
+  if (!t.startsWith("#")) { alert("Generate first"); return; }
+  await navigator.clipboard.writeText(t);
+};
+</script>
+</body>
+</html>
