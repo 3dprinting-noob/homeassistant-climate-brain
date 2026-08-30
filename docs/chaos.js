@@ -39,7 +39,7 @@
     fail("no second brain", !/id:\s*climate_brain_phase2_brain/.test(yaml), "phase 2 lives in the same automation");
     fail("logger climate_brain", yaml.includes("logger: climate_brain"), "system_log.write");
     const body = yaml.split("\n").filter(l => !l.trim().startsWith("#")).join("\n");
-    fail("no File notify", !/notify\.climate_brain_log/.test(body) && !/^\s*platform:\s*file\b/m.test(body), "1.3.2 is banned");
+    fail("no 1.3.2 File logger", !/action:\s*notify\.climate_brain_log/.test(body) && !/name:\s*climate_brain_log/.test(body) && !/^\s*platform:\s*file\b/m.test(body), "system_log only");
     fail("winter latch includes 64", (body.match(/<= states\('input_number.climate_brain_season_f'\)/g) || []).length >= 1, "±1 so 64 is heat");
     fail("write_zone exists", yaml.includes("script.climate_brain_write_zone"), "one write helper");
     const n = toMin(cfg.clock.night), z2 = toMin(cfg.clock.z2), z1 = toMin(cfg.clock.z1), day = toMin(cfg.clock.day);
@@ -137,7 +137,7 @@
     const pass = rows.filter(r => r.ok).length;
     const fail = rows.filter(r => !r.ok).length;
     return {
-      pass, fail, rows,
+      pass, fail, rows, version: "0.1.5",
       verdict: fail === 0 ? "INSTALL OK" : "DO NOT INSTALL — chaos checker failed",
     };
   }

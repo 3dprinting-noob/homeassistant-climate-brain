@@ -7,7 +7,7 @@
 #         Precool cancel if still toward but ETA > lead+5 min (hysteresis).
 #         Turn-around (not toward) still cancels immediately.
 # 1.3.2: log iCloud3 dir/ETA/zone + Tesla if present; no lat/lon; tesla never occupancy.
-# 1.3.3: File notify removed (HA no longer registers notify.climate_brain_log from YAML).
+# 1.3.3: File logger removed (Home Assistant would not register that notify from YAML).
 #         Logs go to home-assistant.log via system_log.write logger=climate_brain.
 #
 # Writes ONLY:

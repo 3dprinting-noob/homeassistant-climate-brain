@@ -147,7 +147,7 @@
     Climate Brain is a generator, not a second thermostat. Delete other writers completely before install.
   </footer>
 </main>
-<script src="./chaos.js"></script>
+<script src="./chaos.js?v=0.1.5"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -279,7 +279,7 @@ function readPeople() {
 }
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.5").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
@@ -410,7 +410,7 @@ function paintChaos(report) {
   const line = (cls, text) => '<div class="' + cls + '">' + esc(text) + "</div>";
   const bits = [
     line(report.fail ? "fail" : "pass", report.verdict),
-    line(report.fail ? "fail" : "pass", report.pass + " pass / " + report.fail + " fail"),
+    line(report.fail ? "fail" : "pass", (report.version || "") + "  " + report.pass + " pass / " + report.fail + " fail"),
   ];
   report.rows.forEach(r => {
     bits.push(line(r.ok ? "pass" : "fail", (r.ok ? "PASS  " : "FAIL  ") + r.name + " — " + r.detail));
