@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Climate Brain generator</title>
+  <meta name="author" content="GrokAI" />
+  <meta name="generator" content="GrokAI" />
   <style>
     :root { --bg:#111; --card:#1c1c1c; --fg:#f4f4f4; --muted:#9a9a9a; --acc:#18bcf2; --bd:#333; }
     * { box-sizing: border-box; }
@@ -26,6 +28,9 @@
     pre { white-space: pre-wrap; word-break: break-word; background: #0d0d0d; border: 1px solid var(--bd); border-radius: 12px; padding: 12px; max-height: 360px; overflow: auto; font-size: 12px; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
     .check { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+    #integrity { display: none; position: sticky; top: 8px; z-index: 20; background: #16324a; color: #f4f4f4; border: 1px solid var(--acc); border-radius: 10px; padding: 12px 14px; margin: 12px 0; font-weight: 600; }
+    #integrity.run { display: block; }
+    button:disabled { opacity: 0.45; cursor: wait; }
     @media (max-width: 700px) { .grid, .grid3 { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -33,6 +38,7 @@
 <main>
   <h1>Climate Brain v1.3.3</h1>
   <p class="lead">Stamps a Home Assistant package for communicating HVAC zones. Occupancy is any on/off sensor. Travel is optional. Tesla is never occupancy.</p>
+  <p class="note">Temperature vocabulary (Comfort / Eco / Boost / Away) is inspired by <a href="https://github.com/jmcollin78/versatile_thermostat" style="color:#18bcf2">Versatile Thermostat</a>. Climate Brain writes the HVAC climates directly. Attributes: GrokAI.</p>
 
   <h2>House</h2>
   <div class="grid">
@@ -83,6 +89,15 @@
   </div>
   <div id="night_inputs" class="grid"></div>
 
+  <h2>Clock (local time)</h2>
+  <p class="note">Sleep, morning wake, and day-start are yours. Zone 2 can wake earlier than Zone 1. These become <code>input_datetime</code> helpers so you can still tweak them in HA.</p>
+  <div class="grid">
+    <div><label>Night / sleep start</label><input id="clk_night" type="time" value="22:30" /></div>
+    <div><label>Morning Zone 2</label><input id="clk_z2" type="time" value="05:15" /></div>
+    <div><label>Morning Zone 1</label><input id="clk_z1" type="time" value="05:45" /></div>
+    <div><label>Day start (morning window ends)</label><input id="clk_day" type="time" value="06:15" /></div>
+  </div>
+
   <h2>Vacation</h2>
   <div class="check"><input type="checkbox" id="want_vac" checked /><label for="want_vac" style="margin:0">Include a Vacation button on the dashboard</label></div>
   <p class="note">The helper always exists in the package. If you skip the button, leave it off. Vacation on = empty-house setpoints until someone is really home.</p>
@@ -91,6 +106,7 @@
     <div><label>Vacation cool</label><input id="v_cool" type="number" step="0.5" value="80" /></div>
   </div>
 
+  <div id="integrity" role="status" aria-live="polite"></div>
   <div class="actions">
     <button class="primary" type="button" id="gen">Generate</button>
     <button class="ghost" type="button" id="dl_pkg">Download package</button>
@@ -98,11 +114,19 @@
     <button class="ghost" type="button" id="copy_pkg">Copy package</button>
     <button class="ghost" type="button" id="copy_dash">Copy dashboard</button>
   </div>
+  <h2>Chaos checker</h2>
+  <p class="note">Runs automatically after Generate. Presence flicker vs real leave, occupancy unknown never Away, travel toward/away + ETA hysteresis, outdoor 64/65/66 latch, YAML integrity. Do not install a FAIL package.</p>
+  <pre id="out_chaos">Generate to run the checker.</pre>
   <h2>Package</h2>
   <pre id="out_pkg">Generate to see YAML.</pre>
   <h2>Dashboard cards</h2>
   <pre id="out_dash"></pre>
+  <footer class="note" style="margin-top:40px">
+    Attributes: <strong>GrokAI</strong>. Temperature presets inspired by Versatile Thermostat.
+    Climate Brain is a generator, not a second thermostat. Delete other writers completely before install.
+  </footer>
 </main>
+<script src="./chaos.js"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -169,6 +193,11 @@ document.getElementById("want_vac").onchange = (e) => {
 };
 function v(id) { return document.getElementById(id).value.trim(); }
 function n(id) { return document.getElementById(id).value.trim(); }
+function clockVal(id, def) {
+  let x = v(id) || def;
+  if (/^\d{2}:\d{2}$/.test(x)) x += ":00";
+  return x;
+}
 function readPeople() {
   if (!document.getElementById("want_travel").checked) return [];
   return [...peopleEl.querySelectorAll(".person")].map(card => {
@@ -189,7 +218,8 @@ function dashboardYaml(cfg) {
   const brain = ["- type: entities", "  title: Brain", "  show_header_toggle: false", "  entities:", "    - " + cfg.occupancy, "    - input_boolean.climate_brain_enabled"];
   if (cfg.travel) brain.push("    - input_boolean.climate_brain_phase2");
   if (cfg.vacation) brain.push("    - input_boolean.climate_brain_vacation", "    - input_number.climate_brain_vacation_heat", "    - input_number.climate_brain_vacation_cool");
-  brain.push("    - sensor.climate_brain_period", "    - input_text.climate_brain_status", "    - input_select.climate_brain_home_hvac", "    - input_select.climate_brain_latched_season");
+  brain.push("    - sensor.climate_brain_period", "    - input_text.climate_brain_status", "    - input_select.climate_brain_home_hvac", "    - input_select.climate_brain_latched_season",
+    "    - input_datetime.climate_brain_night_start", "    - input_datetime.climate_brain_morning_z2", "    - input_datetime.climate_brain_morning_z1", "    - input_datetime.climate_brain_day_start");
   const setp = ["- type: entities", "  title: Setpoints", "  show_header_toggle: false", "  entities:",
     "    - input_number.climate_brain_comfort_heat", "    - input_number.climate_brain_comfort_cool",
     "    - input_number.climate_brain_away_heat", "    - input_number.climate_brain_away_cool",
@@ -266,6 +296,10 @@ function render() {
     .replaceAll("__INIT_NIGHT_Z2_COOL__", two ? (n("n2c") || "72") : (n("n1c") || "76"))
     .replaceAll("__INIT_VAC_HEAT__", n("v_heat") || "55")
     .replaceAll("__INIT_VAC_COOL__", n("v_cool") || "80")
+    .replaceAll("__CLOCK_NIGHT__", clockVal("clk_night", "22:30"))
+    .replaceAll("__CLOCK_MORNING_Z2__", clockVal("clk_z2", "05:15"))
+    .replaceAll("__CLOCK_MORNING_Z1__", clockVal("clk_z1", "05:45"))
+    .replaceAll("__CLOCK_DAY__", clockVal("clk_day", "06:15"))
     .replaceAll("__PEOPLE_ETA_PAIRS__", pairs)
     .replaceAll("__PEOPLE_PHONE_DICTS__", dicts)
     .replaceAll("__PEOPLE_TRAVEL_TRIGGERS__", trigs)
@@ -286,7 +320,18 @@ function render() {
   });
   document.getElementById("out_pkg").textContent = yaml;
   document.getElementById("out_dash").textContent = dash;
-  return { pkg: yaml, dash };
+  const cfg = {
+    zones, occupancy: v("occupancy") || "binary_sensor.home_occupancy", outdoor: v("outdoor") || "sensor.outdoor_temperature",
+    clock: { night: v("clk_night") || "22:30", z2: v("clk_z2") || "05:15", z1: v("clk_z1") || "05:45", day: v("clk_day") || "06:15" },
+    temps: { comfortHeat: n("c_heat") || "71", comfortCool: n("c_cool") || "74", awayHeat: n("a_heat") || "65", awayCool: n("a_cool") || "78", boostHeat: n("b_heat") || "73", boostCool: n("b_cool") || "70" },
+  };
+  let report = { pass: 0, fail: 1, verdict: "checker missing", rows: [] };
+  if (window.ClimateBrainChaos) report = ClimateBrainChaos.run(yaml, cfg);
+  const lines = [report.verdict, report.pass + " pass / " + report.fail + " fail", ""].concat(report.rows.map(r => (r.ok ? "PASS  " : "FAIL  ") + r.name + " — " + r.detail));
+  document.getElementById("out_chaos").textContent = lines.join("\n");
+  document.getElementById("out_chaos").style.color = report.fail ? "#f88" : "#8f8";
+  if (report.fail) alert(report.verdict);
+  return { pkg: yaml, dash, chaos: report };
 }
 function download(name, text) {
   const a = document.createElement("a");
@@ -294,9 +339,46 @@ function download(name, text) {
   a.download = name;
   a.click();
 }
-document.getElementById("gen").onclick = render;
-document.getElementById("dl_pkg").onclick = () => { const r = render(); if (r.pkg.startsWith("#")) download("climate_brain.yaml", r.pkg); };
-document.getElementById("dl_dash").onclick = () => { const r = render(); if (r.dash.startsWith("#")) download("climate_brain_dashboard.yaml", r.dash); };
+function integrityMessage() {
+  const n = parseInt(v("nzones") || "2", 10);
+  return "Software integrity checks are running. This may take a while depending on the number of zones (" + n + ").";
+}
+function showIntegrityRunning() {
+  const msg = integrityMessage();
+  const banner = document.getElementById("integrity");
+  banner.textContent = msg;
+  banner.classList.add("run");
+  const out = document.getElementById("out_chaos");
+  out.textContent = msg;
+  out.style.color = "#18bcf2";
+  ["gen", "dl_pkg", "dl_dash", "copy_pkg", "copy_dash"].forEach(id => document.getElementById(id).disabled = true);
+  banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function hideIntegrityRunning() {
+  document.getElementById("integrity").classList.remove("run");
+  ["gen", "dl_pkg", "dl_dash", "copy_pkg", "copy_dash"].forEach(id => document.getElementById(id).disabled = false);
+}
+let lastResult = null;
+function generateThen(cb) {
+  showIntegrityRunning();
+  // Two frames so the banner paints before the checker blocks the tab.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    lastResult = render();
+    hideIntegrityRunning();
+    if (cb) cb(lastResult);
+  }));
+}
+document.getElementById("gen").onclick = () => generateThen();
+document.getElementById("dl_pkg").onclick = () => generateThen(r => {
+  if (!r.pkg.startsWith("#")) return;
+  if (r.chaos && r.chaos.fail) { alert(r.chaos.verdict); return; }
+  download("climate_brain.yaml", r.pkg);
+});
+document.getElementById("dl_dash").onclick = () => generateThen(r => {
+  if (!r.dash.startsWith("#")) return;
+  if (r.chaos && r.chaos.fail) { alert(r.chaos.verdict); return; }
+  download("climate_brain_dashboard.yaml", r.dash);
+});
 document.getElementById("copy_pkg").onclick = async () => {
   const t = document.getElementById("out_pkg").textContent;
   if (!t.startsWith("#")) { alert("Generate first"); return; }

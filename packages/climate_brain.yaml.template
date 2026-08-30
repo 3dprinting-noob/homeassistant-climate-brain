@@ -331,22 +331,22 @@ input_datetime:
     name: Night start
     has_date: false
     has_time: true
-    initial: "22:30:00"
+    initial: "__CLOCK_NIGHT__"
   climate_brain_morning_z2:
     name: Morning Zone 2
     has_date: false
     has_time: true
-    initial: "05:15:00"
+    initial: "__CLOCK_MORNING_Z2__"
   climate_brain_morning_z1:
     name: Morning Zone 1
     has_date: false
     has_time: true
-    initial: "05:45:00"
+    initial: "__CLOCK_MORNING_Z1__"
   climate_brain_day_start:
     name: Day start (override window end)
     has_date: false
     has_time: true
-    initial: "06:15:00"
+    initial: "__CLOCK_DAY__"
   climate_brain_precool_started:
     name: Precool started
     has_date: true
@@ -1081,7 +1081,7 @@ automation:
       - trigger: time
         at: input_datetime.climate_brain_day_start
         id: day_start
-      # Same clock edges as templates so YAML reload still hits 22:30 / 5:15 / 5:45 / 6:15.
+      # Same clock edges as the input_datetime helpers (wizard sets initials).
       - trigger: template
         value_template: >-
           {% set t = states('input_datetime.climate_brain_night_start') %}

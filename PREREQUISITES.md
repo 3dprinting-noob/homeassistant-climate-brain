@@ -48,3 +48,8 @@ logger:
   logs:
     climate_brain: info
 ```
+
+## Credits
+
+- Temperature presets inspired by [Versatile Thermostat](https://github.com/jmcollin78/versatile_thermostat).
+- Attributes: GrokAI.
