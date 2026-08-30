@@ -38,12 +38,46 @@
     .entity-row { display: flex; gap: 8px; align-items: stretch; }
     .entity-row input { flex: 1; min-width: 0; }
     .entity-row button { flex: 0 0 auto; white-space: nowrap; }
+    .warn {
+      background: #3a1515; border: 2px solid #ff5c5c; color: #ffd6d6;
+      padding: 14px 16px; border-radius: 12px; margin: 0 0 16px;
+      font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase;
+    }
+    .warn p { margin: 0 0 10px; }
+    .prereq, .howto { text-transform: none; font-weight: 600; letter-spacing: 0; color: #f4d0d0; }
+    .howto { margin: 8px 0 0; padding-left: 1.2rem; }
+    .legal { text-transform: uppercase; font-weight: 800; }
+    #gate {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.72);
+      z-index: 80; align-items: center; justify-content: center; padding: 16px;
+    }
+    #gate.show { display: flex; }
+    #gate .sheet { max-width: 560px; width: 100%; background: #1c1c1c; border: 1px solid #555; border-radius: 12px; padding: 16px; }
+    #gate label { color: var(--fg); font-size: 0.95rem; }
     @media (max-width: 700px) { .grid, .grid3 { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
 <main>
+  <div class="warn">
+    <p>REMOVE ANY OTHER THERMOSTATS CONTROLLING THE HVAC BEFORE DEPLOYING THIS SCRIPT.</p>
+    <p class="legal">THE USER TAKES FULL RESPONSIBILITY FOR DEPLOYING, CONTROLLING SAFE PARAMETERS, AND USAGE SCENARIOS. INCORRECT USAGE OF THIS APP MAY RESULT IN DAMAGE TO THE HVAC OR HOME ASSISTANT. THE CREATOR IS NOT RESPONSIBLE FOR ANY DAMAGE CAUSED TO HOME ASSISTANT OR THE HVAC BY USING THIS PACKAGE.</p>
+    <p>TESTED ON A TRANE COMMUNICATING HEAT PUMP HEATING AND COOLING SYSTEM.</p>
+    <ol class="prereq">
+      <li>FORCED AIR HVAC ONLY (FOR NOW).</li>
+      <li>HOME ASSISTANT MUST HAVE WIRED OR WIRELESS CONTROL OF THE HVAC FOR HEAT, COOL, AND HEAT-COOL.</li>
+    </ol>
+    <p class="prereq" style="margin-top:12px">How to remove extra thermostats (delete the controllers, not the HVAC climate entities):</p>
+    <ol class="howto">
+      <li>Delete Versatile Thermostat / VTherm devices and helpers on these zones. Disable is not enough if they still run on restart.</li>
+      <li>Delete automations, scripts, Node-RED flows, and helpers that call <code>climate.set_temperature</code>, <code>climate.set_hvac_mode</code>, or <code>climate.set_preset_mode</code>.</li>
+      <li>Remove Generic Thermostat, Dual Smart Thermostat, or Better Thermostat wrapping the same equipment.</li>
+      <li>In the HVAC app (Trane Home / Nexia): turn off Auto and weekly schedules. Occupied mode is heat_cool, never Auto.</li>
+      <li>Leave the <code>climate.*</code> zone entities. Two writers will fight and the house will oscillate.</li>
+    </ol>
+  </div>
   <h1>Climate Brain v1.3.3</h1>
+
   <p class="lead">Stamps a Home Assistant package for communicating HVAC zones. Occupancy is any on/off sensor. Travel is optional. Tesla is never occupancy.</p>
   <p class="note">Temperature vocabulary (Comfort / Eco / Boost / Away) is inspired by <a href="https://github.com/jmcollin78/versatile_thermostat" style="color:#18bcf2">Versatile Thermostat</a>. Climate Brain writes the HVAC climates directly. Attributes: GrokAI.</p>
 
@@ -98,6 +132,20 @@
     <div id="people"></div>
   </div>
 
+  <h2>Tesla (optional, travel only)</h2>
+  <p class="note">Tesla is never occupancy. Occupancy stays the people binary sensor. Tesla may start arrival precool only when the car is heading home (destination matches home) and minutes-to-arrival is inside the lead window. Skip this if you have no Tesla integration.</p>
+  <div class="check"><input type="checkbox" id="want_tesla" /><label for="want_tesla" style="margin:0">Use Tesla for arrival precool (travel / ETA only)</label></div>
+  <div id="teslabox" style="display:none">
+    <label>What means heading home? (matched inside the destination sensor)</label>
+    <div class="entity-row">
+      <input id="tesla_home" value="" placeholder="home" autocomplete="off" />
+      <button type="button" class="ghost" data-fill="tesla_home" data-val="home">Use default</button>
+    </div>
+    <p class="hint">Suggested: <code>home</code> or your street from the Tesla destination sensor. Do not put Tesla in occupancy.</p>
+    <div class="row"><strong>Vehicles</strong><button class="ghost" type="button" id="add_tesla">Add vehicle</button></div>
+    <div id="teslas"></div>
+  </div>
+
   <h2>Temperatures (°F)</h2>
   <p class="note">Occupied / night / late hold use heat_cool dual setpoints. Empty, Boost, vacation, and precool use one latched heat or cool target.</p>
   <div class="grid3">
@@ -146,8 +194,20 @@
     Attributes: <strong>GrokAI</strong>. Temperature presets inspired by Versatile Thermostat.
     Climate Brain is a generator, not a second thermostat. Delete other writers completely before install.
   </footer>
+  <div id="gate" role="dialog" aria-modal="true">
+    <div class="sheet">
+      <h2>Before you download</h2>
+      <p class="note">Both boxes are required. This is written into the YAML as a risk-accepted comment.</p>
+      <div class="check"><input type="checkbox" id="gate_removed" /><label for="gate_removed" style="margin:0">I have deleted every other thermostat / climate writer on these HVAC entities.</label></div>
+      <div class="check"><input type="checkbox" id="gate_risk" /><label for="gate_risk" style="margin:0">I understand the risks and use cases. I take full responsibility for deployment and safe setpoints. The creator is not responsible for damage to HVAC or Home Assistant.</label></div>
+      <div class="actions">
+        <button class="primary" type="button" id="gate_go">Confirm and continue</button>
+        <button class="ghost" type="button" id="gate_cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 </main>
-<script src="./chaos.js?v=0.1.5"></script>
+<script src="./chaos.js?v=0.1.6"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -200,6 +260,68 @@ document.getElementById("want_travel").onchange = (e) => {
   document.getElementById("travelbox").style.display = e.target.checked ? "block" : "none";
   if (e.target.checked && !peopleEl.children.length) personCard();
 };
+const teslasEl = document.getElementById("teslas");
+function teslaCard(p = {}) {
+  const wrap = document.createElement("div");
+  wrap.className = "person";
+  wrap.innerHTML = `
+    <div class="row"><strong>Tesla</strong><button class="danger" type="button" data-rm>Remove</button></div>
+    <div class="grid">
+      <div><label>Name</label><input data-k="name" value="${p.name || ""}" placeholder="Tesla" /></div>
+      <div><label>Slug</label><input data-k="slug" value="${p.slug || ""}" placeholder="tesla" /></div>
+      <div>
+        <label>Device tracker (logs only, never occupancy)</label>
+        <div class="entity-row">
+          <input data-k="tracker" value="${p.tracker || ""}" placeholder="device_tracker.tesla" autocomplete="off" />
+          <button type="button" class="ghost" data-fill-k="tracker">Use default</button>
+        </div>
+        <p class="hint">Suggested: <code>device_tracker.&lt;slug&gt;</code></p>
+      </div>
+      <div>
+        <label>Destination sensor</label>
+        <div class="entity-row">
+          <input data-k="dest" value="${p.dest || ""}" placeholder="sensor.tesla_destination" autocomplete="off" />
+          <button type="button" class="ghost" data-fill-k="dest">Use default</button>
+        </div>
+        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_destination</code></p>
+      </div>
+      <div>
+        <label>Minutes to arrival / travel time</label>
+        <div class="entity-row">
+          <input data-k="eta" value="${p.eta || ""}" placeholder="sensor.tesla_time_to_arrival" autocomplete="off" />
+          <button type="button" class="ghost" data-fill-k="eta">Use default</button>
+        </div>
+        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_time_to_arrival</code></p>
+      </div>
+      <div>
+        <label>Existing toward entity (optional)</label>
+        <div class="entity-row">
+          <input data-k="toward" value="${p.toward || ""}" placeholder="sensor.tesla_direction" autocomplete="off" />
+          <button type="button" class="ghost" data-fill-k="toward">Use default</button>
+        </div>
+        <p class="hint">Leave empty to stamp a toward/away sensor from destination matching home.</p>
+      </div>
+    </div>`;
+  wrap.querySelector("[data-rm]").onclick = () => wrap.remove();
+  const name = wrap.querySelector('[data-k="name"]');
+  const slug = wrap.querySelector('[data-k="slug"]');
+  name.addEventListener("input", () => { if (!slug.dataset.touched) slug.value = slugify(name.value); });
+  slug.addEventListener("input", () => { slug.dataset.touched = "1"; });
+  teslasEl.appendChild(wrap);
+}
+document.getElementById("add_tesla").onclick = () => teslaCard();
+document.getElementById("want_tesla").onchange = (e) => {
+  document.getElementById("teslabox").style.display = e.target.checked ? "block" : "none";
+  if (e.target.checked && !teslasEl.children.length) teslaCard();
+};
+function teslaFillMap(slug) {
+  return {
+    tracker: "device_tracker." + slug,
+    dest: "sensor." + slug + "_destination",
+    eta: "sensor." + slug + "_time_to_arrival",
+    toward: "sensor." + slug + "_direction",
+  };
+}
 function paintZones() {
   const n = parseInt(document.getElementById("nzones").value, 10);
   const zbox = document.getElementById("zone_inputs");
@@ -251,7 +373,11 @@ document.addEventListener("click", (e) => {
   const card = fk.closest(".person");
   if (!card) return;
   const slug = slugify(card.querySelector('[data-k="slug"]').value || card.querySelector('[data-k="name"]').value || "person");
-  const map = { dir: "sensor." + slug + "_direction", eta: "sensor." + slug + "_travel_time", tracker: "device_tracker." + slug + "_phone" };
+  const map = Object.assign({
+    dir: "sensor." + slug + "_direction",
+    eta: "sensor." + slug + "_travel_time",
+    tracker: "device_tracker." + slug + "_phone",
+  }, teslaFillMap(slug));
   const inp = card.querySelector('[data-k="' + fk.dataset.fillK + '"]');
   if (inp) inp.value = map[fk.dataset.fillK] || "";
 });
@@ -277,9 +403,34 @@ function readPeople() {
     return { name: g("name") || g("slug") || "person", slug: slugify(g("slug") || g("name")), dir: g("dir"), eta: g("eta"), tracker: g("tracker") };
   }).filter(p => p.dir && p.eta);
 }
+function safeNeedle(s) {
+  return (s || "home").replace(/[^a-zA-Z0-9 ._-]/g, "") || "home";
+}
+function readTesla() {
+  if (!document.getElementById("want_tesla").checked) return { people: [], sensors: "" };
+  const home = safeNeedle(v("tesla_home") || "home");
+  const people = [];
+  let sensors = "";
+  [...teslasEl.querySelectorAll(".person")].forEach((card, i) => {
+    const g = k => (card.querySelector(`[data-k="${k}"]`) || { value: "" }).value.trim();
+    const slug = slugify(g("slug") || g("name") || ("tesla_" + (i + 1)));
+    const eta = g("eta");
+    const dest = g("dest");
+    const toward = g("toward");
+    const tracker = g("tracker");
+    if (!eta) return;
+    let dir = toward;
+    if (!dir && dest) {
+      dir = "sensor.climate_brain_tesla_" + slug + "_direction";
+      sensors += "      - name: Climate Brain tesla " + slug + " direction\n        unique_id: climate_brain_tesla_" + slug + "_direction\n        state: >-\n          {% set dest = states('" + dest + "') | lower %}\n          {% set needle = '" + home + "' | lower %}\n          {% if dest in ['unknown', 'unavailable', 'none', ''] %}\n            away\n          {% elif needle in dest %}\n            toward\n          {% else %}\n            away\n          {% endif %}\n";
+    }
+    if (dir && eta) people.push({ name: g("name") || slug, slug: "tesla_" + slug, dir, eta, tracker });
+  });
+  return { people, sensors };
+}
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template?v=0.1.5").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.6").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
@@ -330,7 +481,8 @@ function render() {
   const z1 = zones[0];
   const z2 = zones[1] || z1;
   const two = nz >= 2;
-  const people = readPeople();
+  const tesla = readTesla();
+  const people = readPeople().concat(tesla.people);
   const travel = people.length > 0;
   const pairs = people.map(p => `('${p.dir}', '${p.eta}')`).join(", ");
   const dicts = people.map(p => {
@@ -378,7 +530,8 @@ function render() {
     .replaceAll("__EXTRA_NIGHT_HELPERS__", extra.helpers)
     .replaceAll("__EXTRA_ZONE_VARS__", extra.vars)
     .replaceAll("__EXTRA_ZONE_WRITES__", extra.writes)
-    .replaceAll("__EXTRA_NIGHT_TRIGGERS__", extra.trigs);
+    .replaceAll("__EXTRA_NIGHT_TRIGGERS__", extra.trigs)
+    .replaceAll("__TESLA_DIRECTION_SENSORS__", tesla.sensors);
   if (yaml.includes("__Z1__") || yaml.includes("__OCCUPANCY__") || yaml.includes("__PEOPLE_ETA") || yaml.includes("__INIT_")) {
     alert("Template still has placeholders.");
   }
@@ -458,27 +611,51 @@ function generateThen(cb) {
     if (cb) cb(lastResult);
   }));
 }
+function watermark(yaml) {
+  const stamp = new Date().toISOString();
+  return "# CLIMATE_BRAIN_RISK_ACCEPTED " + stamp + "\n# The downloading user confirmed other HVAC writers were removed\n# and accepted full responsibility for deployment, parameters, and use.\n" + yaml;
+}
+let pendingExport = null;
+function withGate(fn) {
+  pendingExport = fn;
+  document.getElementById("gate_removed").checked = false;
+  document.getElementById("gate_risk").checked = false;
+  document.getElementById("gate").classList.add("show");
+}
+document.getElementById("gate_cancel").onclick = () => {
+  document.getElementById("gate").classList.remove("show");
+  pendingExport = null;
+};
+document.getElementById("gate_go").onclick = () => {
+  if (!document.getElementById("gate_removed").checked || !document.getElementById("gate_risk").checked) {
+    alert("Check both boxes to continue.");
+    return;
+  }
+  document.getElementById("gate").classList.remove("show");
+  const fn = pendingExport;
+  pendingExport = null;
+  if (fn) fn();
+};
 document.getElementById("gen").onclick = () => generateThen();
-document.getElementById("dl_pkg").onclick = () => generateThen(r => {
+document.getElementById("dl_pkg").onclick = () => withGate(() => generateThen(r => {
   if (!r.pkg.startsWith("#")) return;
   if (r.chaos && r.chaos.fail) { alert(r.chaos.verdict); return; }
-  download("climate_brain.yaml", r.pkg);
-});
-document.getElementById("dl_dash").onclick = () => generateThen(r => {
+  download("climate_brain.yaml", watermark(r.pkg));
+}));
+document.getElementById("dl_dash").onclick = () => withGate(() => generateThen(r => {
   if (!r.dash.startsWith("#")) return;
   if (r.chaos && r.chaos.fail) { alert(r.chaos.verdict); return; }
-  download("climate_brain_dashboard.yaml", r.dash);
-});
-document.getElementById("copy_pkg").onclick = async () => {
-  const t = document.getElementById("out_pkg").textContent;
-  if (!t.startsWith("#")) { alert("Generate first"); return; }
-  await navigator.clipboard.writeText(t);
-};
-document.getElementById("copy_dash").onclick = async () => {
-  const t = document.getElementById("out_dash").textContent;
-  if (!t.startsWith("#")) { alert("Generate first"); return; }
-  await navigator.clipboard.writeText(t);
-};
+  download("climate_brain_dashboard.yaml", watermark(r.dash));
+}));
+document.getElementById("copy_pkg").onclick = () => withGate(() => generateThen(r => {
+  if (!r.pkg.startsWith("#")) { alert("Generate first"); return; }
+  navigator.clipboard.writeText(watermark(r.pkg));
+}));
+document.getElementById("copy_dash").onclick = () => withGate(() => generateThen(r => {
+  if (!r.dash.startsWith("#")) { alert("Generate first"); return; }
+  navigator.clipboard.writeText(watermark(r.dash));
+}));
+
 </script>
 </body>
 </html>

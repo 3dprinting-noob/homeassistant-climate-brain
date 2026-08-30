@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6 — 2026-08-30
+
+- Top-of-form warning: remove other thermostats; full-responsibility disclaimer; Trane communicating heat pump test note; forced-air + HA heat/cool/heat-cool prereqs; removal steps.
+- Download/copy asks two confirmations, then stamps `# CLIMATE_BRAIN_RISK_ACCEPTED` into the YAML.
+- Optional Tesla travel/ETA (never occupancy): vehicles, destination, minutes-to-arrival, home match.
+
 ## 0.1.5 — 2026-08-30
 
 - Chaos checker cache-bust (`chaos.js?v=0.1.5`). File-logger check only flags a real notify action, not the 1.3.3 changelog comment.
@@ -27,6 +33,12 @@
 - After Generate, a fussy chaos checker runs (YAML integrity, presence flicker vs leave, occupancy unknown never Away, travel toward/away + ETA +5 hysteresis, outdoor 64/65/66 latch). FAIL packages cannot download.
 
 # Changelog
+
+## 0.1.6 — 2026-08-30
+
+- Top-of-form warning: remove other thermostats; full-responsibility disclaimer; Trane communicating heat pump test note; forced-air + HA heat/cool/heat-cool prereqs; removal steps.
+- Download/copy asks two confirmations, then stamps `# CLIMATE_BRAIN_RISK_ACCEPTED` into the YAML.
+- Optional Tesla travel/ETA (never occupancy): vehicles, destination, minutes-to-arrival, home match.
 
 ## 0.1.5 — 2026-08-30
 

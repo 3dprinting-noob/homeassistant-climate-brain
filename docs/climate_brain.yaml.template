@@ -34,8 +34,7 @@
 # Power loss: last_write is the snapshot. Gap > 5 min cancels leftover timers,
 # then clock+occupancy. Vacation boolean restores.
 #
-# Tesla API and Trane CAN bus are NOT required. They are omitted from this file.
-# When they exist later: Tesla travel/ETA only (never occupancy). CAN readers
+# Tesla is optional and travel/ETA only (never occupancy). CAN readers
 # only (never a trigger, never a write). Do not add them to occupancy.
 # travel_snap logs Tesla device_trackers/sensors via states() if present
 # (entity_id=state, no lat/lon). Tesla is NEVER an occupancy trigger.
@@ -457,6 +456,7 @@ template:
           {% else %}
             unknown
           {% endif %}
+__TESLA_DIRECTION_SENSORS__
       - name: Climate Brain family eta
         unique_id: climate_brain_family_eta
         unit_of_measurement: min
