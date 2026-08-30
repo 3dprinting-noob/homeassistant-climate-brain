@@ -1,5 +1,5 @@
 # =============================================================================
-# Climate Brain v1.3.4 — sole writer for two communicating HVAC zones
+# Climate Brain v1.4.1 — sole writer for two communicating HVAC zones
 # Generated. Household entity IDs come from the wizard, not this template.
 # Phase 1 + Phase 2 in ONE operational automation / ONE writer.
 # Precool, slope EMA, night, late arrival, morning live here together.
@@ -34,10 +34,18 @@
 # Power loss: last_write is the snapshot. Gap > 5 min cancels leftover timers,
 # then clock+occupancy. Vacation boolean restores.
 #
-# Tesla is optional and travel/ETA only (never occupancy). CAN readers
-# only (never a trigger, never a write). Do not add them to occupancy.
-# travel_snap logs Tesla device_trackers/sensors via states() if present
-# (entity_id=state, no lat/lon). Tesla is NEVER an occupancy trigger.
+# Tesla is travel / ETA only. NEVER occupancy. NEVER feed Tesla location,
+# user_present, or route into occupancy. iPhones / people sensors stay occupancy.
+# Direction helpers (wizard-stamped): toward | away | inhome.
+# Driveway (location home) is inhome, not travel. Empty dest is NOT automatically away.
+# Route/dest matches home needle + TTA>0 → toward. Nav dest not home → away.
+# No usable nav: falling distance() to zone.home (≥0.08 km) → toward, rising → away.
+# Last distance helpers updated on travel evaluate AFTER falling/rising.
+# Tesla toward ETAs join family_eta min(). Occupied house never starts precool.
+# 1.4.1 HVAC: climate_brain_enabled is HVAC connection. Off stops writes;
+# Trane/Nexia schedule resumes; last setpoints stay. No climate.turn_off on disconnect.
+# travel_snap logs named Tesla entities (not a 'tesla' entity_id scan).
+# CAN readers only (never a trigger, never a write).
 #
 # INSTALL
 #   1. Put this file at config/packages/climate_brain.yaml
@@ -65,8 +73,8 @@
 
 input_boolean:
   climate_brain_enabled:
-    name: Climate Brain
-    icon: mdi:brain
+    name: Climate Brain HVAC connection
+    icon: mdi:thermostat
     initial: true
   climate_brain_phase2:
     name: Climate Brain arrival precool (phase 2)
@@ -505,6 +513,8 @@ __EXTRA_NIGHT_HELPERS__
     mode: box
     unit_of_measurement: "°F"
 
+__TESLA_DIST_HELPERS__
+
 input_datetime:
   climate_brain_empty_since:
     name: Climate Brain empty since
@@ -682,6 +692,7 @@ __TESLA_DIRECTION_SENSORS__
               {% endif %}
             {% endif %}
           {% endfor %}
+__TESLA_ETA_APPEND__
           {% if ns.best < 9999 %}
             {{ ns.best }}
           {% else %}
@@ -1279,19 +1290,8 @@ __EXTRA_ZONE_VARS__
               {% set piece = p.name ~ '=' ~ (zns.z if zns.z else '?') ~ '|' ~ dir_s ~ ':' ~ eta_s %}
               {% set ns.p = ns.p + [piece] %}
             {% endfor %}
-            {% set tns = namespace(b=[]) %}
-            {% for s in states.device_tracker | default([]) %}
-              {% if 'tesla' in s.entity_id %}
-                {% set tns.b = tns.b + [s.entity_id ~ '=' ~ s.state] %}
-              {% endif %}
-            {% endfor %}
-            {% for s in states.sensor | default([]) %}
-              {% if 'tesla' in s.entity_id and ('arrival' in s.entity_id or 'destination' in s.entity_id or 'travel' in s.entity_id or 'time_to' in s.entity_id or 'heading' in s.entity_id or 'location' in s.entity_id) %}
-                {% set tns.b = tns.b + [s.entity_id ~ '=' ~ s.state] %}
-              {% endif %}
-            {% endfor %}
-            {% set tesla = ('tesla=' ~ (tns.b | join(','))) if tns.b else 'tesla=none' %}
-            {{ ((ns.p + [tesla]) | join(' '))[:400] }}
+__TESLA_SNAP_APPEND__
+            {{ ((ns.p + [tesla]) | join(' '))[:800] }}
       - if:
           - condition: template
             value_template: "{{ period in ['empty', 'vacation', 'precool', 'vacation_boost'] and not outdoor_ready }}"
@@ -1561,9 +1561,9 @@ __EXTRA_NIGHT_TRIGGERS__
       - trigger: state
         entity_id: input_boolean.climate_brain_vacation
         id: vacation
-      # Tesla Fleet not installed — do not add tesla entity state triggers
-      # (missing entities error in HA). travel_snap logs tesla via states()
-      # when present. Tesla is NEVER an occupancy trigger.
+      # Tesla is travel / ETA only. NEVER occupancy. Triggers only if the wizard
+      # stamped vehicle entities (missing entities would error in HA).
+__TESLA_TRAVEL_TRIGGERS__
       - trigger: state
         entity_id:
 __PEOPLE_TRAVEL_TRIGGERS__
@@ -2013,6 +2013,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
                         {% endif %}
                       {% endif %}
                     {% endfor %}
+__TESLA_ETA_TRAVEL__
                     {{ ns.best }}
                   outdoor: "{{ states('sensor.climate_brain_outdoor') | float(none) }}"
                   season: "{{ states('input_number.climate_brain_season_f') | float(65) }}"
@@ -2073,6 +2074,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
                             or not ((eta | int(9999) > 0) and (eta | int(9999) < 9999))
                             or (eta | int(9999)) > ((lead | float(60)) + 5)) }}
                   travel_snap: *climate_brain_travel_snap
+__TESLA_DIST_UPDATE__
               - action: system_log.write
                 continue_on_error: true
                 data:
@@ -2275,6 +2277,31 @@ __PEOPLE_TRAVEL_TRIGGERS__
           reason: "{{ trigger.id | default('ha_start') }}"
 
 
+
+  - id: climate_brain_hvac_connection
+    alias: Climate Brain HVAC connection
+    description: input_boolean.climate_brain_enabled on→off runs power_off; off→on runs power_on. power_off turns enabled off (already off is a no-op, no loop). Does not climate.set the HVAC.
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.climate_brain_enabled
+        from: "on"
+        to: "off"
+        id: conn_off
+      - trigger: state
+        entity_id: input_boolean.climate_brain_enabled
+        from: "off"
+        to: "on"
+        id: conn_on
+    actions:
+      - choose:
+          - conditions: "{{ trigger.id == 'conn_off' }}"
+            sequence:
+              - action: script.climate_brain_power_off
+          - conditions: "{{ trigger.id == 'conn_on' }}"
+            sequence:
+              - action: script.climate_brain_power_on
+
   - id: climate_brain_zone_editor
     alias: Climate Brain zone editor
     mode: queued
@@ -2291,10 +2318,10 @@ __PEOPLE_TRAVEL_TRIGGERS__
         id: defaults
       - trigger: state
         entity_id: input_button.climate_brain_hvac_on
-        id: on
+        id: hvac_on
       - trigger: state
         entity_id: input_button.climate_brain_hvac_off
-        id: off
+        id: hvac_off
     actions:
       - choose:
           - conditions: "{{ trigger.id == 'save' }}"
@@ -2303,10 +2330,10 @@ __PEOPLE_TRAVEL_TRIGGERS__
           - conditions: "{{ trigger.id == 'defaults' }}"
             sequence:
               - action: script.climate_brain_zone_defaults
-          - conditions: "{{ trigger.id == 'on' }}"
+          - conditions: "{{ trigger.id == 'hvac_on' }}"
             sequence:
               - action: script.climate_brain_power_on
-          - conditions: "{{ trigger.id == 'off' }}"
+          - conditions: "{{ trigger.id == 'hvac_off' }}"
             sequence:
               - action: script.climate_brain_power_off
         default:

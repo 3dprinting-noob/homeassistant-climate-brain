@@ -52,7 +52,7 @@ Paste `climate_brain_dashboard.yaml` as a Lovelace dashboard (raw editor).
 
 ## 6. Confirm
 
-- `input_boolean.climate_brain_enabled` is on
+- `input_boolean.climate_brain_enabled` (Climate Brain HVAC connection tile) is on
 - Logs: Settings → System → Logs, logger `climate_brain`
 - Package automations cannot be edited in the UI. Do not click Migrate.
 

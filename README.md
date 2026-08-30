@@ -6,7 +6,7 @@ Temperature vocabulary (Comfort / Eco / Boost / Away) is **inspired by [Versatil
 
 **Attributes:** GrokAI.
 
-This repo is a **generator**. You type your entities. It stamps Climate Brain **v1.3.4.1** plus Lovelace cards. It does not contain anyone’s household YAML.
+This repo is a **generator**. You type your entities. It stamps Climate Brain **v1.4.1** plus Lovelace cards. It does not contain anyone’s household YAML.
 
 **Wizard:** [open it](https://3dprinting-noob.github.io/homeassistant-climate-brain/) or serve `docs/index.html`.
 
@@ -14,7 +14,7 @@ This repo is a **generator**. You type your entities. It stamps Climate Brain **
 | --- | --- |
 | [Prerequisites](PREREQUISITES.md) | HA, occupancy, optional travel |
 | [Install](INSTALL.md) | Generate → package → restart |
-| [Changelog](CHANGELOG.md) | 0.1.0 generator / 1.3.4.1 package |
+| [Changelog](CHANGELOG.md) | 0.1.9 generator / 1.4.1 package |
 
 Not a HACS *integration* yet (no `custom_components/`). Install is paste-the-YAML.
 
@@ -26,7 +26,8 @@ Clock: night 22:30 · zone 2 morning 05:15 · zone 1 morning 05:45 · day 06:15.
 - Occupied / night / late hold = `heat_cool` dual setpoints.
 - Empty / vacation / Boost / precool = latched heat **or** cool + one temperature.
 - 1–8 zones, one brain. Comfort / away / Boost / night are per zone when Independent zones is on.
-- Optional arrival precool from direction + ETA. Tesla is travel only, never occupancy.
+- Optional arrival precool from direction + ETA. Tesla is travel only, never occupancy. Empty Tesla dest is not automatically away. Driveway (location home) is inhome.
+- HVAC connection tile confirms disconnect: Climate Brain stops writing; the HVAC keeps running on the thermostat schedule; last setpoints stay.
 - Vacation helper. Dashboard can hide the button if you do not want it.
 
 ## Other controllers

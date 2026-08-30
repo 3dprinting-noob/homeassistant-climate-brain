@@ -76,7 +76,7 @@
       <li>Leave the <code>climate.*</code> zone entities. Two writers will fight and the house will oscillate.</li>
     </ol>
   </div>
-  <h1>Climate Brain v1.3.4.1</h1>
+  <h1>Climate Brain v1.4.1</h1>
 
   <p class="lead">Stamps a Home Assistant package for communicating HVAC zones. Occupancy is any on/off sensor. Travel is optional. Tesla is never occupancy.</p>
   <p class="note">Temperature vocabulary (Comfort / Eco / Boost / Away) is inspired by <a href="https://github.com/jmcollin78/versatile_thermostat" style="color:#18bcf2">Versatile Thermostat</a>. Climate Brain writes the HVAC climates directly. Attributes: GrokAI.</p>
@@ -135,7 +135,7 @@
   </div>
 
   <h2>Tesla (optional, travel only)</h2>
-  <p class="note">Tesla is never occupancy. Occupancy stays the people binary sensor. Tesla may start arrival precool only when the car is heading home (destination matches home) and minutes-to-arrival is inside the lead window. Skip this if you have no Tesla integration.</p>
+  <p class="note">Tesla is never occupancy. Do not OR cars into the occupancy binary sensor. Empty destination is not automatically away. Direction is toward | away | inhome: location home (driveway) is inhome; route/dest matching home plus TTA&gt;0 is toward; no usable nav uses falling distance() to zone.home (80 m hysteresis); nav dest not home is away. Occupied house never starts precool. Skip this if you have no Tesla integration.</p>
   <div class="check"><input type="checkbox" id="want_tesla" /><label for="want_tesla" style="margin:0">Use Tesla for arrival precool (travel / ETA only)</label></div>
   <div id="teslabox" style="display:none">
     <label>What means heading home? (matched inside the destination sensor)</label>
@@ -209,7 +209,7 @@
     </div>
   </div>
 </main>
-<script src="./chaos.js?v=0.1.8"></script>
+<script src="./chaos.js?v=0.1.9"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -280,12 +280,20 @@ function teslaCard(p = {}) {
         <p class="hint">Suggested: <code>device_tracker.&lt;slug&gt;</code></p>
       </div>
       <div>
-        <label>Destination sensor</label>
+        <label>Destination sensor (optional)</label>
         <div class="entity-row">
           <input data-k="dest" value="${p.dest || ""}" placeholder="sensor.tesla_destination" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="dest">Use default</button>
         </div>
-        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_destination</code></p>
+        <p class="hint">Suggested: <code>sensor.&lt;slug&gt;_destination</code>. Empty dest is not automatically away.</p>
+      </div>
+      <div>
+        <label>Route / destination tracker (optional)</label>
+        <div class="entity-row">
+          <input data-k="route" value="${p.route || ""}" placeholder="device_tracker.tesla_route" autocomplete="off" />
+          <button type="button" class="ghost" data-fill-k="route">Use default</button>
+        </div>
+        <p class="hint">Suggested: <code>device_tracker.&lt;slug&gt;_route</code>. Used with dest for nav-home. Travel only, never occupancy.</p>
       </div>
       <div>
         <label>Minutes to arrival / travel time</label>
@@ -301,7 +309,7 @@ function teslaCard(p = {}) {
           <input data-k="toward" value="${p.toward || ""}" placeholder="sensor.tesla_direction" autocomplete="off" />
           <button type="button" class="ghost" data-fill-k="toward">Use default</button>
         </div>
-        <p class="hint">Leave empty to stamp a toward/away sensor from destination matching home.</p>
+        <p class="hint">Leave empty to stamp toward | away | inhome from location, route/dest, TTA, and distance() to zone.home.</p>
       </div>
     </div>`;
   wrap.querySelector("[data-rm]").onclick = () => wrap.remove();
@@ -318,8 +326,9 @@ document.getElementById("want_tesla").onchange = (e) => {
 };
 function teslaFillMap(slug) {
   return {
-    tracker: "device_tracker." + slug,
+    tracker: "device_tracker." + slug + "_location",
     dest: "sensor." + slug + "_destination",
+    route: "device_tracker." + slug + "_route",
     eta: "sensor." + slug + "_time_to_arrival",
     toward: "sensor." + slug + "_direction",
   };
@@ -408,31 +417,112 @@ function readPeople() {
 function safeNeedle(s) {
   return (s || "home").replace(/[^a-zA-Z0-9 ._-]/g, "") || "home";
 }
+function teslaDirJinja(slug, tracker, dest, route, eta, home) {
+  const locE = tracker || "";
+  const routeE = route || dest || "";
+  const etaE = eta || "";
+  const lastE = "input_number.climate_brain_tesla_" + slug + "_dist_km";
+  const needle = home;
+  return "      - name: Climate Brain tesla " + slug + " direction\n        unique_id: climate_brain_tesla_" + slug + "_direction\n        icon: mdi:navigation-variant\n        state: >-\n          {% set loc = states('" + locE + "') | lower %}\n          {% set route = states('" + routeE + "') | lower %}\n          {% set needle = '" + needle + "' | lower %}\n          {% set raw = states('" + etaE + "') | string | lower %}\n          {% set last = states('" + lastE + "') | float(0) %}\n          {% set prev = this.state | default('away') | lower %}\n          {% set bad = ['unknown', 'unavailable', 'none', ''] %}\n          {% set loc_home = loc in ['home', 'zone.home'] or (needle and needle in loc) %}\n          {% set route_home = (route not in bad) and (route in ['home', 'zone.home'] or (needle and needle in route)) %}\n          {% set ns = namespace(mins=0) %}\n          {% if raw not in bad %}\n            {% if ':' in raw %}\n              {% set pp = raw.split(':') %}\n              {% set hp = pp[0] | regex_findall('\\\\d+') %}\n              {% set mp = pp[1] | regex_findall('\\\\d+') if pp | count > 1 else [] %}\n              {% set ns.mins = (hp[0] | int(0) if hp else 0) * 60 + (mp[0] | int(0) if mp else 0) %}\n            {% else %}\n              {% set hm = raw | regex_findall('(\\\\d+)\\\\s*(?:h|hr|hrs|hour|hours)') %}\n              {% set mm = raw | regex_findall('(\\\\d+)\\\\s*(?:m|min|mins|minute|minutes)') %}\n              {% if hm or mm %}\n                {% set ns.mins = (hm[0] | int(0) if hm else 0) * 60 + (mm[0] | int(0) if mm else 0) %}\n              {% else %}\n                {% set nums = raw | regex_findall('\\\\d+') %}\n                {% set ns.mins = nums[0] | int(0) if nums else 0 %}\n              {% endif %}\n            {% endif %}\n          {% endif %}\n          {% if loc_home %}\n            inhome\n          {% elif route_home and ns.mins > 0 %}\n            toward\n          {% elif ns.mins <= 0 and not route_home %}\n            {% set dist = distance('" + locE + "', 'zone.home') | float(none) %}\n            {% if dist is number %}\n              {% set delta = dist - last %}\n              {% if delta <= -0.08 %}\n                toward\n              {% elif delta >= 0.08 %}\n                away\n              {% elif prev in ['toward', 'away', 'inhome'] %}\n                {{ prev }}\n              {% else %}\n                away\n              {% endif %}\n            {% elif prev in ['toward', 'away', 'inhome'] %}\n              {{ prev }}\n            {% else %}\n              away\n            {% endif %}\n          {% else %}\n            away\n          {% endif %}\n";
+}
+function teslaEtaJinja(cars, indent) {
+  if (!cars.length) return "";
+  const pairs = cars.map(c => "('" + c.dir + "', '" + c.eta + "', '" + (c.tracker || "") + "')").join(", ");
+  const L = (n, s) => indent + ("  ".repeat(n)) + s;
+  return [
+    L(0, "{% set teslas = [" + pairs + "] %}"),
+    L(0, "{% for dir_e, eta_e, loc_e in teslas %}"),
+    L(1, "{% set d = states(dir_e) | lower %}"),
+    L(1, "{% set toward = (d == 'toward') or (('toward' in d) and ('inhome' not in d) and ('instat' not in d)) %}"),
+    L(1, "{% if toward %}"),
+    L(2, "{% set raw = states(eta_e) | string | lower %}"),
+    L(2, "{% set mins = 0 %}"),
+    L(2, "{% if raw not in ['unknown', 'unavailable', 'none', ''] %}"),
+    L(3, "{% if ':' in raw %}"),
+    L(4, "{% set pp = raw.split(':') %}"),
+    L(4, "{% set hp = pp[0] | regex_findall('\\\\d+') %}"),
+    L(4, "{% set mp = pp[1] | regex_findall('\\\\d+') if pp | count > 1 else [] %}"),
+    L(4, "{% set mins = (hp[0] | int(0) if hp else 0) * 60 + (mp[0] | int(0) if mp else 0) %}"),
+    L(3, "{% else %}"),
+    L(4, "{% set hm = raw | regex_findall('(\\\\d+)\\\\s*(?:h|hr|hrs|hour|hours)') %}"),
+    L(4, "{% set mm = raw | regex_findall('(\\\\d+)\\\\s*(?:m|min|mins|minute|minutes)') %}"),
+    L(4, "{% if hm or mm %}"),
+    L(5, "{% set mins = (hm[0] | int(0) if hm else 0) * 60 + (mm[0] | int(0) if mm else 0) %}"),
+    L(4, "{% else %}"),
+    L(5, "{% set nums = raw | regex_findall('\\\\d+') %}"),
+    L(5, "{% set mins = nums[0] | int(0) if nums else 0 %}"),
+    L(4, "{% endif %}"),
+    L(3, "{% endif %}"),
+    L(2, "{% endif %}"),
+    L(2, "{% if mins <= 0 and loc_e %}"),
+    L(3, "{% set dist = distance(loc_e, 'zone.home') | float(none) %}"),
+    L(3, "{% if dist is number %}"),
+    L(4, "{% set mins = [1, ((dist * 60 / 45) | round(0) | int)] | max %}"),
+    L(3, "{% endif %}"),
+    L(2, "{% endif %}"),
+    L(2, "{% if mins > 0 and mins < ns.best %}"),
+    L(3, "{% set ns.best = mins %}"),
+    L(2, "{% endif %}"),
+    L(1, "{% endif %}"),
+    L(0, "{% endfor %}"),
+    ""
+  ].join("\n");
+}
 function readTesla() {
-  if (!document.getElementById("want_tesla").checked) return { people: [], sensors: "" };
+  const empty = { cars: [], sensors: "", helpers: "", snap: "            {% set tesla = 'tesla=none' %}\n", triggers: "", distUpdate: "", eta10: "", eta20: "" };
+  if (!document.getElementById("want_tesla").checked) return empty;
   const home = safeNeedle(v("tesla_home") || "home");
-  const people = [];
+  const cars = [];
   let sensors = "";
+  let helpers = "";
+  let snapCars = [];
+  let triggers = [];
+  let distUpdate = "";
   [...teslasEl.querySelectorAll(".person")].forEach((card, i) => {
     const g = k => (card.querySelector(`[data-k="${k}"]`) || { value: "" }).value.trim();
     const slug = slugify(g("slug") || g("name") || ("tesla_" + (i + 1)));
     const eta = g("eta");
     const dest = g("dest");
+    const route = g("route");
     const toward = g("toward");
     const tracker = g("tracker");
-    if (!eta) return;
+    if (!eta && !tracker && !dest && !route) return;
     let dir = toward;
-    if (!dir && dest) {
+    if (!dir && (tracker || dest || route)) {
       dir = "sensor.climate_brain_tesla_" + slug + "_direction";
-      sensors += "      - name: Climate Brain tesla " + slug + " direction\n        unique_id: climate_brain_tesla_" + slug + "_direction\n        state: >-\n          {% set dest = states('" + dest + "') | lower %}\n          {% set needle = '" + home + "' | lower %}\n          {% if dest in ['unknown', 'unavailable', 'none', ''] %}\n            away\n          {% elif needle in dest %}\n            toward\n          {% else %}\n            away\n          {% endif %}\n";
+      sensors += teslaDirJinja(slug, tracker, dest, route, eta, home);
     }
-    if (dir && eta) people.push({ name: g("name") || slug, slug: "tesla_" + slug, dir, eta, tracker });
+    const last = "input_number.climate_brain_tesla_" + slug + "_dist_km";
+    helpers += "  climate_brain_tesla_" + slug + "_dist_km:\n    name: Climate Brain Tesla " + (g("name") || slug) + " last distance\n    min: 0\n    max: 500\n    step: 0.01\n    mode: box\n    unit_of_measurement: km\n    icon: mdi:map-marker-distance\n";
+    const routeE = route || dest || "";
+    const distE = dest && dest.startsWith("sensor.") && dest.includes("distance") ? dest : "";
+    snapCars.push("{'name': 'tesla_" + slug + "', 'loc': '" + (tracker || "") + "', 'route': '" + routeE + "', 'tta': '" + (eta || "") + "', 'dist': '" + distE + "', 'dir': '" + (dir || "") + "'}");
+    if (tracker) triggers.push("          - " + tracker);
+    if (route) triggers.push("          - " + route);
+    if (dest && dest !== route) triggers.push("          - " + dest);
+    if (eta) triggers.push("          - " + eta);
+    if (tracker) {
+      distUpdate += "              - action: input_number.set_value\n                continue_on_error: true\n                target:\n                  entity_id: " + last + "\n                data:\n                  value: >-\n                    {% set d = distance('" + tracker + "', 'zone.home') | float(none) %}\n                    {{ d if d is number else states('" + last + "') | float(0) }}\n";
+    }
+    cars.push({ name: g("name") || slug, slug: slug, dir, eta, tracker, dest, route, last });
   });
-  return { people, sensors };
+  let snap = "            {% set tesla = 'tesla=none' %}\n";
+  if (snapCars.length) {
+    snap = "            {% set cars = [" + snapCars.join(", ") + "] %}\n            {% set tns = namespace(b=[]) %}\n            {% for c in cars %}\n              {% set piece = c.name ~ '=loc:' ~ states(c.loc) ~ '|route:' ~ states(c.route) ~ '|tta:' ~ states(c.tta) ~ '|dist:' ~ states(c.dist) ~ '|dir:' ~ states(c.dir) %}\n              {% set tns.b = tns.b + [piece] %}\n            {% endfor %}\n            {% set tesla = (tns.b | join(' ')) %}\n";
+  }
+  let trigBlock = "";
+  if (triggers.length) {
+    trigBlock = "      # Tesla — travel / ETA only. NEVER occupancy.\n      - trigger: state\n        entity_id:\n" + triggers.join("\n") + "\n        id: travel\n";
+  }
+  return {
+    cars, sensors, helpers, snap, triggers: trigBlock, distUpdate,
+    eta10: teslaEtaJinja(cars.filter(c => c.dir), "          "),
+    eta20: teslaEtaJinja(cars.filter(c => c.dir), "                    "),
+  };
 }
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template?v=0.1.8").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.9").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
@@ -440,10 +530,10 @@ fetch("./climate_brain.yaml.template?v=0.1.8").then(r => {
 function dashboardYaml(cfg) {
   const indent = (lines) => lines.map(l => "      " + l).join("\n");
   const zoneCards = cfg.zones.map(z => indent(["- type: thermostat", "  entity: " + z])).join("\n");
-  const brain = ["- type: entities", "  title: Brain", "  show_header_toggle: false", "  entities:", "    - " + cfg.occupancy, "    - input_boolean.climate_brain_enabled"];
+  const brain = ["- type: entities", "  title: Brain", "  show_header_toggle: false", "  entities:", "    - " + cfg.occupancy];
   if (cfg.travel) brain.push("    - input_boolean.climate_brain_phase2");
   if (cfg.vacation) brain.push("    - input_boolean.climate_brain_vacation", "    - input_number.climate_brain_vacation_heat", "    - input_number.climate_brain_vacation_cool");
-  brain.push("    - sensor.climate_brain_period", "    - input_text.climate_brain_status", "    - input_select.climate_brain_home_hvac", "    - input_select.climate_brain_latched_season",
+  brain.push("    - sensor.climate_brain_period", "    - input_text.climate_brain_status", "    - input_select.climate_brain_latched_season",
     "    - input_datetime.climate_brain_night_start", "    - input_datetime.climate_brain_morning_z2", "    - input_datetime.climate_brain_morning_z1", "    - input_datetime.climate_brain_day_start");
   const setp = ["- type: entities", "  title: Setpoints", "  show_header_toggle: false", "  entities:",
     "    - input_number.climate_brain_comfort_heat", "    - input_number.climate_brain_comfort_cool",
@@ -452,12 +542,21 @@ function dashboardYaml(cfg) {
   ];
   for (let i = 1; i <= cfg.n; i++) setp.push("    - input_number.night_z" + i + "_heat", "    - input_number.night_z" + i + "_cool");
   let travel = "";
-  if (cfg.people.length) {
+  const teslaCars = cfg.teslaCars || [];
+  if (cfg.people.length || teslaCars.length) {
     const ents = ["- type: entities", "  title: Travel", "  show_header_toggle: false", "  entities:"];
     cfg.people.forEach(p => {
       ents.push("    - type: section", "      label: " + p.name);
       ents.push("    - " + p.dir, "    - " + p.eta);
       if (p.tracker) ents.push("    - " + p.tracker);
+    });
+    teslaCars.forEach(c => {
+      ents.push("    - type: section", "      label: Tesla " + c.name);
+      if (c.tracker) ents.push("    - " + c.tracker);
+      if (c.route) ents.push("    - " + c.route);
+      if (c.eta) ents.push("    - " + c.eta);
+      if (c.dest && c.dest !== c.route) ents.push("    - " + c.dest);
+      if (c.dir) ents.push("    - " + c.dir);
     });
     travel = "\n" + indent(ents);
   }
@@ -474,11 +573,18 @@ function dashboardYaml(cfg) {
     "    - input_button.climate_brain_save_zone",
     "    - input_button.climate_brain_zone_defaults"];
   const power = ["- type: entities", "  title: Occupied HVAC / control", "  show_header_toggle: false", "  entities:",
-    "    - input_select.climate_brain_home_hvac",
-    "    - input_button.climate_brain_hvac_on",
-    "    - input_button.climate_brain_hvac_off"];
-  return `# Climate Brain dashboard — paste as a Lovelace dashboard (raw editor).
+    "    - input_select.climate_brain_home_hvac"];
+  const tile = ["- type: tile",
+    "  entity: input_boolean.climate_brain_enabled",
+    "  name: Climate Brain HVAC",
+    "  icon: mdi:thermostat",
+    "  tap_action:",
+    "    action: toggle",
+    "    confirmation:",
+    '      text: "Disconnect Climate Brain? It will stop writing the Trane zones. The HVAC keeps running on the Trane / Nexia thermostat schedule. Last setpoints stay until that schedule or a wall unit changes them."'];
+  return `# Climate Brain 1.4.1 dashboard — paste as a Lovelace dashboard (raw editor).
 # Stock cards. Occupancy is your entity; Climate Brain does not create it.
+# Tesla is travel only. HVAC connection tile confirms disconnect.
 
 title: Climate
 views:
@@ -490,6 +596,7 @@ ${indent(brain)}
 ${indent(setp)}${travel}
 ${indent(editor)}
 ${indent(power)}
+${indent(tile)}
 `;
 }
 
@@ -502,8 +609,8 @@ function render() {
   const z2 = zones[1] || z1;
   const two = nz >= 2;
   const tesla = readTesla();
-  const people = readPeople().concat(tesla.people);
-  const travel = people.length > 0;
+  const people = readPeople();
+  const travel = people.length > 0 || tesla.cars.length > 0;
   const pairs = people.map(p => `('${p.dir}', '${p.eta}')`).join(", ");
   const dicts = people.map(p => {
     const tr = p.tracker ? `'${p.tracker}'` : "''";
@@ -561,7 +668,13 @@ function render() {
     .replaceAll("__EXTRA_ZONE_WRITES__", extra.writes)
     .replaceAll("__EXTRA_NIGHT_TRIGGERS__", extra.trigs)
     .replaceAll("__EXTRA_EDIT_ZONE_OPTIONS__", extra.editopts)
-    .replaceAll("__TESLA_DIRECTION_SENSORS__", tesla.sensors);
+    .replaceAll("__TESLA_DIRECTION_SENSORS__", tesla.sensors)
+    .replaceAll("__TESLA_DIST_HELPERS__", tesla.helpers)
+    .replaceAll("__TESLA_ETA_APPEND__", tesla.eta10)
+    .replaceAll("__TESLA_ETA_TRAVEL__", tesla.eta20)
+    .replaceAll("__TESLA_SNAP_APPEND__", tesla.snap)
+    .replaceAll("__TESLA_TRAVEL_TRIGGERS__", tesla.triggers)
+    .replaceAll("__TESLA_DIST_UPDATE__", tesla.distUpdate);
   if (yaml.includes("__Z1__") || yaml.includes("__OCCUPANCY__") || yaml.includes("__PEOPLE_ETA") || yaml.includes("__INIT_")) {
     alert("Template still has placeholders.");
   }
@@ -570,6 +683,7 @@ function render() {
     zones,
     occupancy: v("occupancy"),
     people,
+    teslaCars: tesla.cars,
     vacation: document.getElementById("want_vac").checked,
     travel,
   });
@@ -579,6 +693,7 @@ function render() {
     zones, occupancy: v("occupancy"), outdoor: v("outdoor"),
     clock: { night: v("clk_night") || "22:30", z2: v("clk_z2") || "05:15", z1: v("clk_z1") || "05:45", day: v("clk_day") || "06:15" },
     temps: { comfortHeat: n("c_heat") || "71", comfortCool: n("c_cool") || "74", awayHeat: n("a_heat") || "65", awayCool: n("a_cool") || "78", boostHeat: n("b_heat") || "73", boostCool: n("b_cool") || "70" },
+    dashboard: dash,
   };
   let report = { pass: 0, fail: 1, verdict: "checker missing", rows: [] };
   if (window.ClimateBrainChaos) report = ClimateBrainChaos.run(yaml, cfg);

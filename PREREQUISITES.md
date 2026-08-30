@@ -27,7 +27,7 @@ How to make one:
 4. Template example using People: `{{ is_state('person.you','home') or is_state('person.partner','home') }}`
 5. Developer tools → States: confirm it flips when you leave and arrive.
 
-Do not OR cars (Tesla or otherwise) into occupancy. If occupancy is `unknown`, the brain will not write Away.
+Do not OR cars (Tesla or otherwise) into occupancy. Tesla location, route, and user_present are never occupancy. If occupancy is `unknown`, the brain will not write Away.
 
 ## Travel / arrival precool (optional)
 
@@ -36,7 +36,7 @@ Only if you want Phase 2. Each traveler needs:
 1. A direction entity whose state contains `toward` when heading home
 2. A travel-time entity in minutes (or a parseable duration string)
 
-Sources can be iCloud3, Android Companion travel sensors + a toward template, OwnTracks, GPSLogger, etc. If you skip travelers, occupancy still runs home / away / night / vacation.
+Sources can be iCloud3, Android Companion travel sensors + a toward template, OwnTracks, GPSLogger, Teslemetry (travel/ETA only), etc. Tesla empty dest is not automatically away; driveway home is inhome. If you skip travelers, occupancy still runs home / away / night / vacation.
 
 ## Dashboard
 

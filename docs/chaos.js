@@ -24,6 +24,7 @@
   }
 
   function structural(yaml, cfg) {
+    cfg = cfg || {};
     const rows = [];
     const fail = (name, ok, detail) => rows.push({ name, ok, detail });
     fail("no leftover tokens", !/__[A-Z0-9_]+__/.test(yaml), "placeholders must be gone");
@@ -44,6 +45,19 @@
     fail("write_zone exists", yaml.includes("script.climate_brain_write_zone"), "one write helper");
     fail("HVAC trigger ids not YAML booleans", /id:\s+hvac_on/.test(yaml) && /id:\s+hvac_off/.test(yaml) && !/^\s+id:\s+(on|off)\s*$/m.test(yaml), "id: on/off become true/false");
     fail("choose routes hvac_on/hvac_off", yaml.includes("trigger.id == 'hvac_on'") && yaml.includes("trigger.id == 'hvac_off'"), "power_on/off reachable");
+    const occOff = (yaml.split("id: occupancy_off")[0] || "").split("triggers:").pop() || "";
+    fail("Tesla never occupancy trigger", !/tesla/i.test(occOff) && !/user_present/.test(occOff), "occupancy_off is people only");
+    fail("Tesla never occupancy template", !/is_state\('device_tracker\.[^']*tesla/i.test(yaml.split("template:")[1] || "") && !/user_present/.test((yaml.split("id: occupancy_off")[0] || "").split("binary_sensor")[0] || "x"), "occupancy templates do not OR Tesla");
+    const dirBlob = yaml;
+    fail("driveway home is inhome", /loc_home[\s\S]{0,80}inhome/.test(dirBlob) || dirBlob.includes("inhome"), "location home → inhome");
+    const emptyAwayAuto = /set dest = states\([^)]+\)[\s\S]{0,200}if dest in \['unknown'[\s\S]{0,80}away/.test(dirBlob);
+    fail("empty dest without falling distance is not toward", !emptyAwayAuto && (dirBlob.includes("0.08") || !dirBlob.includes("climate_brain_tesla_")), "empty dest uses distance hysteresis, not auto away/toward");
+    if (cfg.dashboard) {
+      const d = cfg.dashboard;
+      fail("dashboard HVAC confirmation", d.includes("Disconnect Climate Brain?") && d.includes("Trane / Nexia thermostat schedule"), "tile tap confirmation");
+      fail("dashboard no raw enabled switch", !/title: Brain[\s\S]*input_boolean\.climate_brain_enabled/.test(d), "enabled only on confirming tile");
+      fail("dashboard no HVAC on/off buttons", !d.includes("climate_brain_hvac_on") && !d.includes("climate_brain_hvac_off"), "slider not buttons");
+    }
     const n = toMin(cfg.clock.night), z2 = toMin(cfg.clock.z2), z1 = toMin(cfg.clock.z1), day = toMin(cfg.clock.day);
     fail("morning clocks ordered", z2 < z1 && z1 < day, "Z2 wake < Z1 wake < day");
     fail("night is evening", n > day, "sleep after day start (same calendar wrap)");
@@ -106,6 +120,43 @@
     }
     const flips = chatter.filter(Boolean).length;
     rows.push({ name: "lead threshold does not chatter", ok: flips <= 2, detail: "flips=" + flips });
+    function teslaDir(s) {
+      const loc = String(s.loc || "").toLowerCase();
+      const route = String(s.route || "").toLowerCase();
+      const raw = String(s.tta == null ? "" : s.tta).toLowerCase();
+      const last = +s.last || 0;
+      const prev = s.prev || "away";
+      const bad = ["unknown", "unavailable", "none", ""];
+      const locHome = loc === "home" || loc === "zone.home";
+      const routeHome = route === "home" || route === "zone.home";
+      let mins = 0;
+      if (raw && !bad.includes(raw)) {
+        const n = raw.match(/\d+/);
+        mins = n ? +n[0] : 0;
+      }
+      if (locHome) return "inhome";
+      if (routeHome && mins > 0) return "toward";
+      if (mins <= 0 && !routeHome) {
+        const dist = s.dist;
+        if (typeof dist === "number") {
+          const delta = dist - last;
+          if (delta <= -0.08) return "toward";
+          if (delta >= 0.08) return "away";
+          return prev;
+        }
+        return prev;
+      }
+      return "away";
+    }
+    rows.push({ name: "TESLA_NAV_HOME_TOWARD", ok: teslaDir({loc:"not_home", route:"home", tta:12}) === "toward", detail: "route home + TTA 12" });
+    rows.push({ name: "TESLA_NAV_NOT_HOME", ok: teslaDir({loc:"not_home", route:"work", tta:8, dist:4, last:5}) === "away", detail: "nav dest not home" });
+    rows.push({ name: "TESLA_NO_NAV_DIST_FALL", ok: teslaDir({loc:"not_home", route:"unknown", tta:"unknown", dist:11.0, last:12.0}) === "toward", detail: "12→11 falling" });
+    rows.push({ name: "TESLA_NO_NAV_DIST_RISE", ok: teslaDir({loc:"not_home", route:"unknown", tta:"unknown", dist:12.0, last:11.0}) === "away", detail: "11→12 rising" });
+    rows.push({ name: "TESLA_DRIVEWAY_INHOME", ok: teslaDir({loc:"home", route:"home", tta:3, dist:0.01, last:0.2}) === "inhome", detail: "location home" });
+    const c1 = teslaDir({loc:"not_home", route:"unknown", tta:"", dist:11.04, last:11.00, prev:"toward"});
+    const c2 = teslaDir({loc:"not_home", route:"unknown", tta:"", dist:10.99, last:11.00, prev:"toward"});
+    rows.push({ name: "TESLA_HYST_CHATTER", ok: c1 === "toward" && c2 === "toward", detail: "80m no chatter" });
+    rows.push({ name: "empty dest without falling is not toward", ok: teslaDir({loc:"not_home", route:"unknown", tta:"unknown", dist:12, last:0, prev:"away"}) === "away", detail: "first sample rising vs 0" });
     return rows;
   }
 
@@ -139,7 +190,7 @@
     const pass = rows.filter(r => r.ok).length;
     const fail = rows.filter(r => !r.ok).length;
     return {
-      pass, fail, rows, version: "0.1.8",
+      pass, fail, rows, version: "0.1.9",
       verdict: fail === 0 ? "INSTALL OK" : "DO NOT INSTALL — chaos checker failed",
     };
   }
