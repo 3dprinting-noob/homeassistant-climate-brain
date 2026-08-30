@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.14 — 2026-08-30
+
+- Wizard page: removed HACS / Home Assistant integration steps. That page is the YAML package generator only.
+
 ## 0.1.13 / integration 1.5.0 — 2026-08-30
 
 - HACS custom integration (`custom_components/climate_brain`, domain `climate_brain`, version 1.5.0). Add the GitHub repo as a custom repository, category Integration, then Settings → Devices & Services → Add Integration → Climate Brain.
