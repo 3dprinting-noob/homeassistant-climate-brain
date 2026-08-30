@@ -1,0 +1,192 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Climate Brain is already set up. Open the integration and choose Configure to change it."
+    },
+    "error": {
+      "zone_count": "Pick between 1 and 8 climate zones.",
+      "required": "This field is required."
+    },
+    "step": {
+      "user": {
+        "title": "Climate Brain — house",
+        "description": "Climate Brain is the only program that should change these thermostats. It does not create a second climate entity. Occupancy must be a people/phones binary sensor — never a Tesla.",
+        "data": {
+          "zones": "Climate zones (1–8)",
+          "occupancy": "Occupancy binary sensor (on = someone is home)",
+          "outdoor": "Outdoor temperature (sensor or weather)",
+          "independent_zones": "Each zone has its own comfort, away, Boost, and night temperatures",
+          "home_hvac": "Occupied HVAC mode (never Auto)"
+        }
+      },
+      "travel": {
+        "title": "Travelers (optional)",
+        "description": "Skip this if you only care who is home. Leave the boxes empty and press Submit. Travelers are used to start heating or cooling before you arrive. A Tesla is not a person — add cars on the next screen.",
+        "data": {
+          "skip": "Skip travelers",
+          "name": "Name",
+          "dir": "Direction sensor (state includes the word toward)",
+          "eta": "Minutes-left sensor",
+          "tracker": "Phone tracker (optional)",
+          "add_another": "Add another person after this"
+        }
+      },
+      "tesla": {
+        "title": "Tesla (optional, travel only)",
+        "description": "A Tesla never counts as someone in the house. Skip this if Tesla is not in Home Assistant. Empty destination is not automatically away. A car in the driveway is inhome.",
+        "data": {
+          "skip": "Skip Tesla",
+          "name": "Name",
+          "location": "Car location tracker",
+          "route": "Route / destination tracker",
+          "tta": "Time to arrival sensor",
+          "distance": "Distance to arrival sensor (optional)",
+          "add_another": "Add another car after this"
+        }
+      },
+      "clocks": {
+        "title": "Clocks, vacation, and default temperatures",
+        "description": "These are starting values. You can change them later on the Climate Brain entities and with Configure.",
+        "data": {
+          "night_start": "Night / bedtime",
+          "morning_z2": "Morning zone 2",
+          "morning_z1": "Morning zone 1",
+          "day_start": "Day start (morning ends)",
+          "comfort_heat": "Comfort heat (°F)",
+          "comfort_cool": "Comfort cool (°F)",
+          "away_heat": "Away heat (°F)",
+          "away_cool": "Away cool (°F)",
+          "boost_heat": "Boost heat (°F)",
+          "boost_cool": "Boost cool (°F)",
+          "vacation_heat": "Vacation heat (°F)",
+          "vacation_cool": "Vacation cool (°F)"
+        }
+      }
+    }
+  },
+  "options": {
+    "abort": {
+      "already_configured": "Climate Brain is already set up."
+    },
+    "error": {
+      "zone_count": "Pick between 1 and 8 climate zones.",
+      "required": "This field is required."
+    },
+    "step": {
+      "user": {
+        "title": "Climate Brain — house",
+        "description": "Change the climates, occupancy sensor, outdoor sensor, and occupied HVAC mode.",
+        "data": {
+          "zones": "Climate zones (1–8)",
+          "occupancy": "Occupancy binary sensor (on = someone is home)",
+          "outdoor": "Outdoor temperature (sensor or weather)",
+          "independent_zones": "Each zone has its own comfort, away, Boost, and night temperatures",
+          "home_hvac": "Occupied HVAC mode (never Auto)"
+        }
+      },
+      "travel": {
+        "title": "Travelers (optional)",
+        "description": "Leave Skip on to keep the people you already set. Turn Skip off and fill boxes to replace the list.",
+        "data": {
+          "skip": "Keep current travelers (skip)",
+          "name": "Name",
+          "dir": "Direction sensor (state includes the word toward)",
+          "eta": "Minutes-left sensor",
+          "tracker": "Phone tracker (optional)",
+          "add_another": "Add another person after this"
+        }
+      },
+      "tesla": {
+        "title": "Tesla (optional, travel only)",
+        "description": "A Tesla never counts as someone in the house. Leave Skip on to keep the cars you already set.",
+        "data": {
+          "skip": "Keep current Tesla list (skip)",
+          "name": "Name",
+          "location": "Car location tracker",
+          "route": "Route / destination tracker",
+          "tta": "Time to arrival sensor",
+          "distance": "Distance to arrival sensor (optional)",
+          "add_another": "Add another car after this"
+        }
+      },
+      "clocks": {
+        "title": "Clocks, vacation, and default temperatures",
+        "description": "House-wide starting temperatures. Per-zone numbers stay on the Climate Brain entities.",
+        "data": {
+          "night_start": "Night / bedtime",
+          "morning_z2": "Morning zone 2",
+          "morning_z1": "Morning zone 1",
+          "day_start": "Day start (morning ends)",
+          "comfort_heat": "Comfort heat (°F)",
+          "comfort_cool": "Comfort cool (°F)",
+          "away_heat": "Away heat (°F)",
+          "away_cool": "Away cool (°F)",
+          "boost_heat": "Boost heat (°F)",
+          "boost_cool": "Boost cool (°F)",
+          "vacation_heat": "Vacation heat (°F)",
+          "vacation_cool": "Vacation cool (°F)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "switch": {
+      "enabled": {
+        "name": "HVAC connection"
+      },
+      "vacation": {
+        "name": "Vacation"
+      },
+      "phase2": {
+        "name": "Arrival precool"
+      }
+    },
+    "sensor": {
+      "period": {
+        "name": "Period"
+      },
+      "status": {
+        "name": "Status"
+      }
+    },
+    "select": {
+      "home_hvac": {
+        "name": "Occupied HVAC mode"
+      },
+      "latched_season": {
+        "name": "Latched season"
+      },
+      "edit_zone": {
+        "name": "Edit zone"
+      }
+    },
+    "button": {
+      "save_zone": {
+        "name": "Save zone"
+      },
+      "zone_defaults": {
+        "name": "Zone defaults"
+      }
+    },
+    "datetime": {
+      "night_start": {
+        "name": "Night start"
+      },
+      "morning_z2": {
+        "name": "Morning zone 2"
+      },
+      "morning_z1": {
+        "name": "Morning zone 1"
+      },
+      "day_start": {
+        "name": "Day start"
+      }
+    }
+  },
+  "services": {
+    "generate_dashboard": {
+      "name": "Generate dashboard",
+      "description": "Write climate_brain_dashboard.yaml into the Home Assistant config folder."
+    }
+  }
+}

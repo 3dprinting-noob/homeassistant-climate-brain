@@ -1,0 +1,3 @@
+generate_dashboard:
+  name: Generate dashboard
+  description: Write climate_brain_dashboard.yaml into the Home Assistant config folder. Paste it in the Lovelace raw editor. Built-in cards only.

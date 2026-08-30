@@ -1,0 +1,12 @@
+{
+  "domain": "climate_brain",
+  "name": "Climate Brain",
+  "codeowners": ["@3dprinting-noob"],
+  "config_flow": true,
+  "documentation": "https://3dprinting-noob.github.io/homeassistant-climate-brain/",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/3dprinting-noob/homeassistant-climate-brain/issues",
+  "requirements": [],
+  "version": "1.5.0"
+}

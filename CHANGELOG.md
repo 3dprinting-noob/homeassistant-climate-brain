@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.13 / integration 1.5.0 — 2026-08-30
+
+- HACS custom integration (`custom_components/climate_brain`, domain `climate_brain`, version 1.5.0). Add the GitHub repo as a custom repository, category Integration, then Settings → Devices & Services → Add Integration → Climate Brain.
+- Config flow collects climate zones (1–8), occupancy, outdoor, independent zones, occupied HVAC mode, optional travelers, optional Tesla (no user_present), clocks, and default setpoints. Options flow edits the same data. Single instance.
+- The integration is the sole writer to those `climate.*` zones. It does not create `climate.climate_brain*`. Engine is the 1.4.1 model (occupancy flicker, unknown never Away, Tesla travel-only, season latch, HVAC connection off stops writes).
+- Native switch / number / select / sensor / button / datetime entities so HACS uninstall removes them. HVAC connection is a confirming tile (`Disconnect Climate Brain?` / `Trane / Nexia thermostat schedule`).
+- Service `climate_brain.generate_dashboard` writes Lovelace YAML (built-in cards).
+- Wizard kept for YAML 1.4.1 packages. “Two ways to install” box on the Pages site. Cache-bust `chaos.js` / template `?v=0.1.13`.
+- Not in the default HACS store.
+
 ## 0.1.12 — 2026-08-30
 
 - Chaos checker: HVAC enabled on the confirming tile no longer fails "raw enabled switch". The old check matched from the Brain card through the whole dashboard.

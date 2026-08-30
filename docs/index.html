@@ -76,7 +76,21 @@
       <li>Keep the <code>climate.*</code> zone entities. If two programs both change the thermostats, the house will bounce between temperatures.</li>
     </ol>
   </div>
-  <h1>Climate Brain v1.4.1</h1>
+
+  <div class="card" id="two-ways" style="border-color:var(--acc)">
+    <strong>Two ways to install</strong>
+    <p class="note" style="margin:8px 0 6px">Recommended: use HACS so Climate Brain is a real integration. You pick your climate entities in Home Assistant. Climate Brain is the only program that writes those thermostats. It does not create a second climate entity.</p>
+    <ol class="note" style="padding-left:1.2rem;margin:0 0 8px">
+      <li>HACS → Integrations → three dots → Custom repositories.</li>
+      <li>Paste <code>https://github.com/3dprinting-noob/homeassistant-climate-brain</code></li>
+      <li>Category: Integration → Add.</li>
+      <li>Find Climate Brain and download it. Restart Home Assistant.</li>
+      <li>Settings → Devices &amp; Services → Add Integration → Climate Brain. Fill in your entity IDs.</li>
+    </ol>
+    <p class="note" style="margin:0">Or stay on this page to generate a YAML package (1.4.1) for <code>config/packages/</code>. YAML is the older install. HACS is the one we recommend.</p>
+  </div>
+
+  <h1>Climate Brain v1.4.1 YAML generator</h1>
 
   <p class="lead">This page builds a Home Assistant file that controls your heating and cooling. Occupancy is any on/off sensor that means “someone is home.” Travel (phones or Tesla) is optional. A Tesla is never used to decide if the house is occupied.</p>
   <p class="note">Names like Comfort, Eco, Boost, and Away are inspired by <a href="https://github.com/jmcollin78/versatile_thermostat" style="color:#18bcf2">Versatile Thermostat</a>. Climate Brain talks to the HVAC climates itself. It does not install VTherm. Credit: GrokAI.</p>
@@ -237,7 +251,7 @@ logger:
     </div>
   </div>
 </main>
-<script src="./chaos.js?v=0.1.12"></script>
+<script src="./chaos.js?v=0.1.13"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -550,7 +564,7 @@ function readTesla() {
 }
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template?v=0.1.12").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.13").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });

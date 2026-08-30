@@ -3,8 +3,8 @@
 ## Home Assistant
 
 - Home Assistant OS, Container, or Supervised, about 2024.10 or newer (2025/2026 is fine)
-- `packages: !include_dir_named packages` in `configuration.yaml`
 - You can restart Home Assistant
+- HACS (for the recommended integration). The YAML wizard still needs `packages: !include_dir_named packages` in `configuration.yaml`
 
 ## HVAC
 
@@ -17,7 +17,7 @@ Not required: Versatile Thermostat, Tesla, CAN bus, or an iPhone.
 
 ## Occupancy (required)
 
-Climate Brain does **not** create occupancy. You make a Home Assistant `binary_sensor` that is **on when people are home** and **off when the house is empty**, then paste its entity ID into the wizard.
+Climate Brain does **not** create occupancy. You make a Home Assistant `binary_sensor` that is **on when people are home** and **off when the house is empty**, then paste its entity ID into the HACS setup screen or the YAML wizard.
 
 How to make one:
 
@@ -40,7 +40,7 @@ Sources can be iCloud3, Android Companion travel sensors, OwnTracks, GPSLogger, 
 
 ## Dashboard
 
-Built-in Lovelace cards only. Mushroom is not required.
+Built-in Lovelace cards only. Mushroom is not required. HACS users: call the \`climate_brain.generate_dashboard\` service. The HVAC connection belongs on the confirming tile, not a generic Brain list.
 
 ## Logging
 
