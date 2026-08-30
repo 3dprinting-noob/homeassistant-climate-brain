@@ -1141,7 +1141,7 @@ __EXTRA_NIGHT_TRIGGERS__
       - trigger: template
         value_template: >-
           {{ states('__OUTDOOR__') | float(100)
-             < states('input_number.climate_brain_season_f') | float(65) - 1 }}
+             <= states('input_number.climate_brain_season_f') | float(65) - 1 }}
         id: outdoor_winter
       - trigger: state
         entity_id: input_boolean.climate_brain_vacation
@@ -1772,7 +1772,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
             value_template: >-
               {{ states('__OUTDOOR__') | float(none) is number
                  and (states('__OUTDOOR__') | float(100)
-                      < states('input_number.climate_brain_season_f') | float(65) - 1) }}
+                      <= states('input_number.climate_brain_season_f') | float(65) - 1) }}
         then:
           - action: input_select.select_option
             target:

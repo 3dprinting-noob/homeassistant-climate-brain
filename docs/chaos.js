@@ -38,7 +38,9 @@
     fail("outdoor entity", yaml.includes(cfg.outdoor), cfg.outdoor);
     fail("no second brain", !/id:\s*climate_brain_phase2_brain/.test(yaml), "phase 2 lives in the same automation");
     fail("logger climate_brain", yaml.includes("logger: climate_brain"), "system_log.write");
-    fail("no File notify", !/notify\.climate_brain_log/.test(yaml) && !/platform:\s*file/.test(yaml), "1.3.2 is banned");
+    const body = yaml.split("\n").filter(l => !l.trim().startsWith("#")).join("\n");
+    fail("no File notify", !/notify\.climate_brain_log/.test(body) && !/^\s*platform:\s*file\b/m.test(body), "1.3.2 is banned");
+    fail("winter latch includes 64", (body.match(/<= states\('input_number.climate_brain_season_f'\)/g) || []).length >= 1, "±1 so 64 is heat");
     fail("write_zone exists", yaml.includes("script.climate_brain_write_zone"), "one write helper");
     const n = toMin(cfg.clock.night), z2 = toMin(cfg.clock.z2), z1 = toMin(cfg.clock.z1), day = toMin(cfg.clock.day);
     fail("morning clocks ordered", z2 < z1 && z1 < day, "Z2 wake < Z1 wake < day");
@@ -110,11 +112,11 @@
     const season = 65;
     function latch(out, cur) {
       if (out >= season + 1) return "cool";
-      if (out < season - 1) return "heat";
+      if (out <= season - 1) return "heat";
       return cur;
     }
     rows.push({ name: "outdoor 66 latches cool", ok: latch(66, "heat") === "cool", detail: "≥66" });
-    rows.push({ name: "outdoor 64 latches heat", ok: latch(64, "cool") === "heat", detail: "<64" });
+    rows.push({ name: "outdoor 64 latches heat", ok: latch(64, "cool") === "heat", detail: "≤64" });
     rows.push({ name: "outdoor 65 stays (dead-zone)", ok: latch(65, "cool") === "cool" && latch(65, "heat") === "heat", detail: "±1 around 65" });
     const comfortH = +cfg.temps.comfortHeat, comfortC = +cfg.temps.comfortCool;
     rows.push({ name: "comfort heat < comfort cool", ok: comfortH < comfortC, detail: comfortH + "/" + comfortC });
