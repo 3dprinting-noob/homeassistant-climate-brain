@@ -42,6 +42,8 @@
     fail("no 1.3.2 File logger", !/action:\s*notify\.climate_brain_log/.test(body) && !/name:\s*climate_brain_log/.test(body) && !/^\s*platform:\s*file\b/m.test(body), "system_log only");
     fail("winter latch includes 64", (body.match(/<= states\('input_number.climate_brain_season_f'\)/g) || []).length >= 1, "±1 so 64 is heat");
     fail("write_zone exists", yaml.includes("script.climate_brain_write_zone"), "one write helper");
+    fail("HVAC trigger ids not YAML booleans", /id:\s+hvac_on/.test(yaml) && /id:\s+hvac_off/.test(yaml) && !/^\s+id:\s+(on|off)\s*$/m.test(yaml), "id: on/off become true/false");
+    fail("choose routes hvac_on/hvac_off", yaml.includes("trigger.id == 'hvac_on'") && yaml.includes("trigger.id == 'hvac_off'"), "power_on/off reachable");
     const n = toMin(cfg.clock.night), z2 = toMin(cfg.clock.z2), z1 = toMin(cfg.clock.z1), day = toMin(cfg.clock.day);
     fail("morning clocks ordered", z2 < z1 && z1 < day, "Z2 wake < Z1 wake < day");
     fail("night is evening", n > day, "sleep after day start (same calendar wrap)");
@@ -137,7 +139,7 @@
     const pass = rows.filter(r => r.ok).length;
     const fail = rows.filter(r => !r.ok).length;
     return {
-      pass, fail, rows, version: "0.1.7",
+      pass, fail, rows, version: "0.1.8",
       verdict: fail === 0 ? "INSTALL OK" : "DO NOT INSTALL — chaos checker failed",
     };
   }

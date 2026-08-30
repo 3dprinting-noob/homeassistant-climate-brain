@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8 / package 1.3.4.1 — 2026-08-30
+
+- HVAC On/Off trigger ids are `hvac_on` / `hvac_off` (unquoted YAML `id: on` / `id: off` became booleans, so dashboard buttons reloaded the zone editor instead of power_on/off).
+- Chaos checker flags unquoted `id: on` / `id: off`.
+
 ## 0.1.7 / package 1.3.4 — 2026-08-30
 
 - Each zone has its own comfort / away / Boost / night. Zones 3+ can still follow zone 2 if you uncheck independent.

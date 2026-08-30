@@ -1,5 +1,5 @@
 # =============================================================================
-# Climate Brain v1.3.4 — sole writer for two communicating HVAC zones
+# Climate Brain v1.3.4.1 — sole writer for two communicating HVAC zones
 # Generated. Household entity IDs come from the wizard, not this template.
 # Phase 1 + Phase 2 in ONE operational automation / ONE writer.
 # Precool, slope EMA, night, late arrival, morning live here together.
@@ -2291,10 +2291,10 @@ __PEOPLE_TRAVEL_TRIGGERS__
         id: defaults
       - trigger: state
         entity_id: input_button.climate_brain_hvac_on
-        id: on
+        id: hvac_on
       - trigger: state
         entity_id: input_button.climate_brain_hvac_off
-        id: off
+        id: hvac_off
     actions:
       - choose:
           - conditions: "{{ trigger.id == 'save' }}"
@@ -2303,10 +2303,10 @@ __PEOPLE_TRAVEL_TRIGGERS__
           - conditions: "{{ trigger.id == 'defaults' }}"
             sequence:
               - action: script.climate_brain_zone_defaults
-          - conditions: "{{ trigger.id == 'on' }}"
+          - conditions: "{{ trigger.id == 'hvac_on' }}"
             sequence:
               - action: script.climate_brain_power_on
-          - conditions: "{{ trigger.id == 'off' }}"
+          - conditions: "{{ trigger.id == 'hvac_off' }}"
             sequence:
               - action: script.climate_brain_power_off
         default:

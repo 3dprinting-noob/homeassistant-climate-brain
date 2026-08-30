@@ -76,7 +76,7 @@
       <li>Leave the <code>climate.*</code> zone entities. Two writers will fight and the house will oscillate.</li>
     </ol>
   </div>
-  <h1>Climate Brain v1.3.4</h1>
+  <h1>Climate Brain v1.3.4.1</h1>
 
   <p class="lead">Stamps a Home Assistant package for communicating HVAC zones. Occupancy is any on/off sensor. Travel is optional. Tesla is never occupancy.</p>
   <p class="note">Temperature vocabulary (Comfort / Eco / Boost / Away) is inspired by <a href="https://github.com/jmcollin78/versatile_thermostat" style="color:#18bcf2">Versatile Thermostat</a>. Climate Brain writes the HVAC climates directly. Attributes: GrokAI.</p>
@@ -209,7 +209,7 @@
     </div>
   </div>
 </main>
-<script src="./chaos.js?v=0.1.7"></script>
+<script src="./chaos.js?v=0.1.8"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -432,7 +432,7 @@ function readTesla() {
 }
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template?v=0.1.7").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.8").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
