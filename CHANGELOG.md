@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.7 / package 1.3.4 — 2026-08-30
+
+- Each zone has its own comfort / away / Boost / night. Zones 3+ can still follow zone 2 if you uncheck independent.
+- Outdoor can be a temperature sensor or a `weather.*` entity (uses the temperature attribute).
+- Dashboard zone editor: pick zone, fields, Save overwrites that zone; one Defaults button.
+- Occupied HVAC dropdown: heat / cool / heat-cool (never auto).
+- HVAC control On / Off buttons. On clears leftover timers and evaluates like a restart; saved zone temps stay.
+
 ## 0.1.6 — 2026-08-30
 
 - Top-of-form warning: remove other thermostats; full-responsibility disclaimer; Trane communicating heat pump test note; forced-air + HA heat/cool/heat-cool prereqs; removal steps.
@@ -33,6 +41,14 @@
 - After Generate, a fussy chaos checker runs (YAML integrity, presence flicker vs leave, occupancy unknown never Away, travel toward/away + ETA +5 hysteresis, outdoor 64/65/66 latch). FAIL packages cannot download.
 
 # Changelog
+
+## 0.1.7 / package 1.3.4 — 2026-08-30
+
+- Each zone has its own comfort / away / Boost / night. Zones 3+ can still follow zone 2 if you uncheck independent.
+- Outdoor can be a temperature sensor or a `weather.*` entity (uses the temperature attribute).
+- Dashboard zone editor: pick zone, fields, Save overwrites that zone; one Defaults button.
+- Occupied HVAC dropdown: heat / cool / heat-cool (never auto).
+- HVAC control On / Off buttons. On clears leftover timers and evaluates like a restart; saved zone temps stay.
 
 ## 0.1.6 — 2026-08-30
 

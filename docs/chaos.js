@@ -137,7 +137,7 @@
     const pass = rows.filter(r => r.ok).length;
     const fail = rows.filter(r => !r.ok).length;
     return {
-      pass, fail, rows, version: "0.1.6",
+      pass, fail, rows, version: "0.1.7",
       verdict: fail === 0 ? "INSTALL OK" : "DO NOT INSTALL — chaos checker failed",
     };
   }

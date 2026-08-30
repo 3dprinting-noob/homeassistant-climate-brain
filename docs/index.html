@@ -76,7 +76,7 @@
       <li>Leave the <code>climate.*</code> zone entities. Two writers will fight and the house will oscillate.</li>
     </ol>
   </div>
-  <h1>Climate Brain v1.3.3</h1>
+  <h1>Climate Brain v1.3.4</h1>
 
   <p class="lead">Stamps a Home Assistant package for communicating HVAC zones. Occupancy is any on/off sensor. Travel is optional. Tesla is never occupancy.</p>
   <p class="note">Temperature vocabulary (Comfort / Eco / Boost / Away) is inspired by <a href="https://github.com/jmcollin78/versatile_thermostat" style="color:#18bcf2">Versatile Thermostat</a>. Climate Brain writes the HVAC climates directly. Attributes: GrokAI.</p>
@@ -97,16 +97,18 @@
       </select>
     </div>
     <div>
-      <label>Outdoor temperature entity</label>
+      <label>Outdoor temperature (HVAC outdoor, local weather, or any HA weather)</label>
       <div class="entity-row">
         <input id="outdoor" value="" placeholder="sensor.outdoor_temperature" autocomplete="off" />
         <button type="button" class="ghost" data-fill="outdoor" data-val="sensor.outdoor_temperature">Use default</button>
       </div>
-      <p class="hint">Leave empty and type the entity from HA (Developer tools → States, filter <code>sensor.</code>). Suggested name: <code>sensor.outdoor_temperature</code>.</p>
+      <p class="hint">Any temperature <code>sensor.*</code> (Met.no, OpenWeather, AccuWeather, Accu, your HVAC outdoor). Or a <code>weather.*</code> entity; the package reads its <code>temperature</code> attribute. Suggested: <code>sensor.outdoor_temperature</code> or <code>weather.home</code>.</p>
     </div>
   </div>
   <p class="note">One brain writes every zone. Same occupancy, vacation, Boost, and comfort. Each zone has its own climate entity and night sliders. Cap is 8. Humidity is not used for setpoints, so it is not on this form.</p>
   <div id="zone_inputs" class="grid"></div>
+  <div class="check"><input type="checkbox" id="independent" checked /><label for="independent" style="margin:0">Each zone has its own comfort / away / Boost / night (recommended). Uncheck to make zones 3+ follow zone 2.</label></div>
+  <p class="hint">Heat vs cool still stays house-wide. One outdoor unit should not heat one zone and cool another.</p>
 
   <h2>Presence</h2>
   <p class="note">Climate Brain does <strong>not</strong> create occupancy. You paste an existing Home Assistant <code>binary_sensor</code> that is <code>on</code> when anyone is home and <code>off</code> when the house is empty. Do not use a car or Tesla.</p>
@@ -207,7 +209,7 @@
     </div>
   </div>
 </main>
-<script src="./chaos.js?v=0.1.6"></script>
+<script src="./chaos.js?v=0.1.7"></script>
 <script>
 const peopleEl = document.getElementById("people");
 function slugify(name) {
@@ -430,7 +432,7 @@ function readTesla() {
 }
 
 let TEMPLATE = "";
-fetch("./climate_brain.yaml.template?v=0.1.6").then(r => {
+fetch("./climate_brain.yaml.template?v=0.1.7").then(r => {
   if (!r.ok) throw new Error("Could not load template");
   return r.text();
 }).then(t => TEMPLATE = t).catch(err => { document.getElementById("out_pkg").textContent = err.message; });
@@ -459,6 +461,22 @@ function dashboardYaml(cfg) {
     });
     travel = "\n" + indent(ents);
   }
+  const editor = ["- type: entities", "  title: Zone editor — pick zone, edit, Save overwrites that zone", "  show_header_toggle: false", "  entities:",
+    "    - input_select.climate_brain_edit_zone",
+    "    - input_number.climate_brain_edit_comfort_heat",
+    "    - input_number.climate_brain_edit_comfort_cool",
+    "    - input_number.climate_brain_edit_away_heat",
+    "    - input_number.climate_brain_edit_away_cool",
+    "    - input_number.climate_brain_edit_boost_heat",
+    "    - input_number.climate_brain_edit_boost_cool",
+    "    - input_number.climate_brain_edit_night_heat",
+    "    - input_number.climate_brain_edit_night_cool",
+    "    - input_button.climate_brain_save_zone",
+    "    - input_button.climate_brain_zone_defaults"];
+  const power = ["- type: entities", "  title: Occupied HVAC / control", "  show_header_toggle: false", "  entities:",
+    "    - input_select.climate_brain_home_hvac",
+    "    - input_button.climate_brain_hvac_on",
+    "    - input_button.climate_brain_hvac_off"];
   return `# Climate Brain dashboard — paste as a Lovelace dashboard (raw editor).
 # Stock cards. Occupancy is your entity; Climate Brain does not create it.
 
@@ -470,6 +488,8 @@ views:
 ${zoneCards}
 ${indent(brain)}
 ${indent(setp)}${travel}
+${indent(editor)}
+${indent(power)}
 `;
 }
 
@@ -490,15 +510,24 @@ function render() {
     return `{'name': '${p.slug}', 'dir': '${p.dir}', 'eta': '${p.eta}', 'tracker': ${tr}}`;
   }).join(", ");
   const trigs = people.flatMap(p => [`          - ${p.eta}`, `          - ${p.dir}`]).join("\n");
-  const extra = { helpers: "", vars: "", writes: "", trigs: "" };
+  const extra = { helpers: "", vars: "", writes: "", trigs: "", editopts: "" };
   for (let i = 3; i <= nz; i++) {
     const ent = zones[i - 1];
     const nh = n("n" + i + "h") || "65";
     const nc = n("n" + i + "c") || "72";
     extra.helpers += `  night_z${i}_heat:\n    name: Night Zone ${i} heat\n    min: 60\n    max: 70\n    step: 0.5\n    initial: ${nh}\n    mode: slider\n    unit_of_measurement: "°F"\n    icon: mdi:thermometer-low\n  night_z${i}_cool:\n    name: Night Zone ${i} cool\n    min: 68\n    max: 76\n    step: 0.5\n    initial: ${nc}\n    mode: slider\n    unit_of_measurement: "°F"\n    icon: mdi:snowflake-thermometer\n`;
-    extra.vars += `          z${i}_heat_sp: >-\n            {% if period == 'night' %}\n              {{ states('input_number.night_z${i}_heat') | float(${nh}) }}\n            {% else %}\n              {{ z2_heat_sp }}\n            {% endif %}\n          z${i}_cool_sp: >-\n            {% if period == 'night' %}\n              {{ states('input_number.night_z${i}_cool') | float(${nc}) }}\n            {% else %}\n              {{ z2_cool_sp }}\n            {% endif %}\n`;
+    extra.editopts += `\n      - "${i}"`;
+    const indep = document.getElementById("independent").checked;
+    if (indep) {
+      const ch = n("c_heat") || "71", cc = n("c_cool") || "74", ah = n("a_heat") || "65", ac = n("a_cool") || "78", bh = n("b_heat") || "73", bc = n("b_cool") || "70";
+      extra.helpers += `  climate_brain_z${i}_comfort_heat:\n    name: Zone ${i} comfort heat\n    min: 60\n    max: 80\n    step: 0.5\n    initial: ${ch}\n    mode: slider\n    unit_of_measurement: "°F"\n  climate_brain_z${i}_comfort_cool:\n    name: Zone ${i} comfort cool\n    min: 68\n    max: 85\n    step: 0.5\n    initial: ${cc}\n    mode: slider\n    unit_of_measurement: "°F"\n  climate_brain_z${i}_away_heat:\n    name: Zone ${i} away heat\n    min: 50\n    max: 72\n    step: 0.5\n    initial: ${ah}\n    mode: slider\n    unit_of_measurement: "°F"\n  climate_brain_z${i}_away_cool:\n    name: Zone ${i} away cool\n    min: 72\n    max: 90\n    step: 0.5\n    initial: ${ac}\n    mode: slider\n    unit_of_measurement: "°F"\n  climate_brain_z${i}_boost_heat:\n    name: Zone ${i} Boost heat\n    min: 68\n    max: 80\n    step: 0.5\n    initial: ${bh}\n    mode: slider\n    unit_of_measurement: "°F"\n  climate_brain_z${i}_boost_cool:\n    name: Zone ${i} Boost cool\n    min: 65\n    max: 76\n    step: 0.5\n    initial: ${bc}\n    mode: slider\n    unit_of_measurement: "°F"\n`;
+      extra.vars += `          z${i}_heat_sp: >-\n            {% if period == 'night' %}\n              {{ states('input_number.night_z${i}_heat') | float(${nh}) }}\n            {% elif period in ['vacation_boost', 'precool'] or (period in ['morning_z1', 'day'] and boost_on | bool and pull_hvac in ['heat', 'cool']) %}\n              {{ states('input_number.climate_brain_z${i}_boost_heat') | float(${bh}) }}\n            {% elif period == 'vacation' %}\n              {{ vacation_heat }}\n            {% elif period == 'empty' %}\n              {{ states('input_number.climate_brain_z${i}_away_heat') | float(${ah}) }}\n            {% else %}\n              {{ states('input_number.climate_brain_z${i}_comfort_heat') | float(${ch}) }}\n            {% endif %}\n          z${i}_cool_sp: >-\n            {% if period == 'night' %}\n              {{ states('input_number.night_z${i}_cool') | float(${nc}) }}\n            {% elif period in ['vacation_boost', 'precool'] or (period in ['morning_z1', 'day'] and boost_on | bool and pull_hvac in ['heat', 'cool']) %}\n              {{ states('input_number.climate_brain_z${i}_boost_cool') | float(${bc}) }}\n            {% elif period == 'vacation' %}\n              {{ vacation_cool }}\n            {% elif period == 'empty' %}\n              {{ states('input_number.climate_brain_z${i}_away_cool') | float(${ac}) }}\n            {% else %}\n              {{ states('input_number.climate_brain_z${i}_comfort_cool') | float(${cc}) }}\n            {% endif %}\n`;
+      extra.trigs += `          - input_number.night_z${i}_heat\n          - input_number.night_z${i}_cool\n          - input_number.climate_brain_z${i}_comfort_heat\n          - input_number.climate_brain_z${i}_comfort_cool\n          - input_number.climate_brain_z${i}_away_heat\n          - input_number.climate_brain_z${i}_away_cool\n          - input_number.climate_brain_z${i}_boost_heat\n          - input_number.climate_brain_z${i}_boost_cool\n`;
+    } else {
+      extra.vars += `          z${i}_heat_sp: >-\n            {% if period == 'night' %}\n              {{ states('input_number.night_z${i}_heat') | float(${nh}) }}\n            {% else %}\n              {{ z2_heat_sp }}\n            {% endif %}\n          z${i}_cool_sp: >-\n            {% if period == 'night' %}\n              {{ states('input_number.night_z${i}_cool') | float(${nc}) }}\n            {% else %}\n              {{ z2_cool_sp }}\n            {% endif %}\n`;
+      extra.trigs += `          - input_number.night_z${i}_heat\n          - input_number.night_z${i}_cool\n`;
+    }
     extra.writes += `      - action: script.climate_brain_write_zone\n        continue_on_error: true\n        data:\n          climate_entity: ${ent}\n          hvac_mode: "{{ z2_hvac }}"\n          kind: "{{ z2_kind }}"\n          temperature: "{{ iif(z2_hvac == 'cool', z${i}_cool_sp, z${i}_heat_sp) }}"\n          target_temp_low: "{{ z${i}_heat_sp }}"\n          target_temp_high: "{{ z${i}_cool_sp }}"\n`;
-    extra.trigs += `          - input_number.night_z${i}_heat\n          - input_number.night_z${i}_cool\n`;
   }
   let yaml = TEMPLATE
     .replaceAll("__Z1__", z1)
@@ -531,6 +560,7 @@ function render() {
     .replaceAll("__EXTRA_ZONE_VARS__", extra.vars)
     .replaceAll("__EXTRA_ZONE_WRITES__", extra.writes)
     .replaceAll("__EXTRA_NIGHT_TRIGGERS__", extra.trigs)
+    .replaceAll("__EXTRA_EDIT_ZONE_OPTIONS__", extra.editopts)
     .replaceAll("__TESLA_DIRECTION_SENSORS__", tesla.sensors);
   if (yaml.includes("__Z1__") || yaml.includes("__OCCUPANCY__") || yaml.includes("__PEOPLE_ETA") || yaml.includes("__INIT_")) {
     alert("Template still has placeholders.");

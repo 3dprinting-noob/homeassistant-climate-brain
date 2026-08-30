@@ -1,5 +1,5 @@
 # =============================================================================
-# Climate Brain v1.3.3 — sole writer for two communicating HVAC zones
+# Climate Brain v1.3.4 — sole writer for two communicating HVAC zones
 # Generated. Household entity IDs come from the wizard, not this template.
 # Phase 1 + Phase 2 in ONE operational automation / ONE writer.
 # Precool, slope EMA, night, late arrival, morning live here together.
@@ -85,10 +85,26 @@ input_boolean:
     name: Vacation away
     icon: mdi:airplane
 
+input_button:
+  climate_brain_save_zone:
+    name: Save this zone
+    icon: mdi:content-save
+  climate_brain_zone_defaults:
+    name: Zone defaults
+    icon: mdi:restore
+  climate_brain_hvac_on:
+    name: HVAC control on
+    icon: mdi:power-on
+  climate_brain_hvac_off:
+    name: HVAC control off
+    icon: mdi:power-off
+
 input_select:
   climate_brain_home_hvac:
     name: Climate Brain occupied HVAC mode
     options:
+      - heat
+      - cool
       - heat_cool
     initial: heat_cool
     icon: mdi:thermostat-auto
@@ -98,6 +114,13 @@ input_select:
       - heat
       - cool
     icon: mdi:sun-snowflake
+  climate_brain_edit_zone:
+    name: Zone to edit
+    options:
+      - "1"
+      - "2"
+__EXTRA_EDIT_ZONE_OPTIONS__
+    icon: mdi:numeric
 
 input_number:
   night_z1_heat:
@@ -137,6 +160,167 @@ input_number:
     unit_of_measurement: "°F"
     icon: mdi:snowflake-thermometer
 __EXTRA_NIGHT_HELPERS__
+
+  climate_brain_z1_comfort_heat:
+    name: Zone 1 comfort heat
+    min: 60
+    max: 80
+    step: 0.5
+    initial: __INIT_COMFORT_HEAT__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z1_comfort_cool:
+    name: Zone 1 comfort cool
+    min: 68
+    max: 85
+    step: 0.5
+    initial: __INIT_COMFORT_COOL__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z1_away_heat:
+    name: Zone 1 away heat
+    min: 50
+    max: 72
+    step: 0.5
+    initial: __INIT_AWAY_HEAT__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z1_away_cool:
+    name: Zone 1 away cool
+    min: 72
+    max: 90
+    step: 0.5
+    initial: __INIT_AWAY_COOL__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z1_boost_heat:
+    name: Zone 1 Boost heat
+    min: 68
+    max: 80
+    step: 0.5
+    initial: __INIT_BOOST_HEAT__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z1_boost_cool:
+    name: Zone 1 Boost cool
+    min: 65
+    max: 76
+    step: 0.5
+    initial: __INIT_BOOST_COOL__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z2_comfort_heat:
+    name: Zone 2 comfort heat
+    min: 60
+    max: 80
+    step: 0.5
+    initial: __INIT_COMFORT_HEAT__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z2_comfort_cool:
+    name: Zone 2 comfort cool
+    min: 68
+    max: 85
+    step: 0.5
+    initial: __INIT_COMFORT_COOL__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z2_away_heat:
+    name: Zone 2 away heat
+    min: 50
+    max: 72
+    step: 0.5
+    initial: __INIT_AWAY_HEAT__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z2_away_cool:
+    name: Zone 2 away cool
+    min: 72
+    max: 90
+    step: 0.5
+    initial: __INIT_AWAY_COOL__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z2_boost_heat:
+    name: Zone 2 Boost heat
+    min: 68
+    max: 80
+    step: 0.5
+    initial: __INIT_BOOST_HEAT__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_z2_boost_cool:
+    name: Zone 2 Boost cool
+    min: 65
+    max: 76
+    step: 0.5
+    initial: __INIT_BOOST_COOL__
+    mode: slider
+    unit_of_measurement: "°F"
+  climate_brain_edit_comfort_heat:
+    name: Edit comfort heat
+    min: 60
+    max: 80
+    step: 0.5
+    initial: __INIT_COMFORT_HEAT__
+    mode: box
+    unit_of_measurement: "°F"
+  climate_brain_edit_comfort_cool:
+    name: Edit comfort cool
+    min: 68
+    max: 85
+    step: 0.5
+    initial: __INIT_COMFORT_COOL__
+    mode: box
+    unit_of_measurement: "°F"
+  climate_brain_edit_away_heat:
+    name: Edit away heat
+    min: 50
+    max: 72
+    step: 0.5
+    initial: __INIT_AWAY_HEAT__
+    mode: box
+    unit_of_measurement: "°F"
+  climate_brain_edit_away_cool:
+    name: Edit away cool
+    min: 72
+    max: 90
+    step: 0.5
+    initial: __INIT_AWAY_COOL__
+    mode: box
+    unit_of_measurement: "°F"
+  climate_brain_edit_boost_heat:
+    name: Edit Boost heat
+    min: 68
+    max: 80
+    step: 0.5
+    initial: __INIT_BOOST_HEAT__
+    mode: box
+    unit_of_measurement: "°F"
+  climate_brain_edit_boost_cool:
+    name: Edit Boost cool
+    min: 65
+    max: 76
+    step: 0.5
+    initial: __INIT_BOOST_COOL__
+    mode: box
+    unit_of_measurement: "°F"
+  climate_brain_edit_night_heat:
+    name: Edit night heat
+    min: 60
+    max: 70
+    step: 0.5
+    initial: __INIT_NIGHT_Z1_HEAT__
+    mode: box
+    unit_of_measurement: "°F"
+  climate_brain_edit_night_cool:
+    name: Edit night cool
+    min: 68
+    max: 80
+    step: 0.5
+    initial: __INIT_NIGHT_Z1_COOL__
+    mode: box
+    unit_of_measurement: "°F"
   climate_brain_comfort_heat:
     name: Comfort heat
     min: 60
@@ -439,7 +623,13 @@ template:
         unique_id: climate_brain_outdoor
         unit_of_measurement: "°F"
         device_class: temperature
-        state: "{{ states('__OUTDOOR__') | float(none) }}"
+        state: >-
+          {% set e = '__OUTDOOR__' %}
+          {% if e.startswith('weather.') %}
+            {{ state_attr(e, 'temperature') | float(none) }}
+          {% else %}
+            {{ states(e) | float(none) }}
+          {% endif %}
       - name: Zone 2 humidity average
         unique_id: climate_brain_z2_humidity
         unit_of_measurement: "%"
@@ -658,6 +848,204 @@ script:
                   target_temp_low: "{{ want_lo | float }}"
                   target_temp_high: "{{ want_hi | float }}"
 
+
+  climate_brain_load_zone:
+    alias: Climate Brain load zone editor
+    mode: restart
+    sequence:
+      - variables:
+          z: "{{ states('input_select.climate_brain_edit_zone') | int(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_comfort_heat}
+        data:
+          value: "{{ states('input_number.climate_brain_z' ~ z ~ '_comfort_heat') | float(71) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_comfort_cool}
+        data:
+          value: "{{ states('input_number.climate_brain_z' ~ z ~ '_comfort_cool') | float(74) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_away_heat}
+        data:
+          value: "{{ states('input_number.climate_brain_z' ~ z ~ '_away_heat') | float(65) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_away_cool}
+        data:
+          value: "{{ states('input_number.climate_brain_z' ~ z ~ '_away_cool') | float(78) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_boost_heat}
+        data:
+          value: "{{ states('input_number.climate_brain_z' ~ z ~ '_boost_heat') | float(73) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_boost_cool}
+        data:
+          value: "{{ states('input_number.climate_brain_z' ~ z ~ '_boost_cool') | float(70) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_night_heat}
+        data:
+          value: "{{ states('input_number.night_z' ~ z ~ '_heat') | float(64) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_night_cool}
+        data:
+          value: "{{ states('input_number.night_z' ~ z ~ '_cool') | float(76) }}"
+
+  climate_brain_save_zone:
+    alias: Climate Brain save zone
+    description: Overwrite that zone's setpoints from the editor line.
+    mode: restart
+    sequence:
+      - variables:
+          z: "{{ states('input_select.climate_brain_edit_zone') | int(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: "{{ 'input_number.climate_brain_z' ~ z ~ '_comfort_heat' }}"}
+        data:
+          value: "{{ states('input_number.climate_brain_edit_comfort_heat') }}"
+      - action: input_number.set_value
+        target: {entity_id: "{{ 'input_number.climate_brain_z' ~ z ~ '_comfort_cool' }}"}
+        data:
+          value: "{{ states('input_number.climate_brain_edit_comfort_cool') }}"
+      - action: input_number.set_value
+        target: {entity_id: "{{ 'input_number.climate_brain_z' ~ z ~ '_away_heat' }}"}
+        data:
+          value: "{{ states('input_number.climate_brain_edit_away_heat') }}"
+      - action: input_number.set_value
+        target: {entity_id: "{{ 'input_number.climate_brain_z' ~ z ~ '_away_cool' }}"}
+        data:
+          value: "{{ states('input_number.climate_brain_edit_away_cool') }}"
+      - action: input_number.set_value
+        target: {entity_id: "{{ 'input_number.climate_brain_z' ~ z ~ '_boost_heat' }}"}
+        data:
+          value: "{{ states('input_number.climate_brain_edit_boost_heat') }}"
+      - action: input_number.set_value
+        target: {entity_id: "{{ 'input_number.climate_brain_z' ~ z ~ '_boost_cool' }}"}
+        data:
+          value: "{{ states('input_number.climate_brain_edit_boost_cool') }}"
+      - action: input_number.set_value
+        target: {entity_id: "{{ 'input_number.night_z' ~ z ~ '_heat' }}"}
+        data:
+          value: "{{ states('input_number.climate_brain_edit_night_heat') }}"
+      - action: input_number.set_value
+        target: {entity_id: "{{ 'input_number.night_z' ~ z ~ '_cool' }}"}
+        data:
+          value: "{{ states('input_number.climate_brain_edit_night_cool') }}"
+      - action: system_log.write
+        continue_on_error: true
+        data:
+          logger: climate_brain
+          level: info
+          message: "zone {{ z }} saved from editor"
+
+  climate_brain_zone_defaults:
+    alias: Climate Brain zone defaults
+    mode: restart
+    sequence:
+      - variables:
+          z: "{{ states('input_select.climate_brain_edit_zone') | int(1) }}"
+          ch: __INIT_COMFORT_HEAT__
+          cc: __INIT_COMFORT_COOL__
+          ah: __INIT_AWAY_HEAT__
+          ac: __INIT_AWAY_COOL__
+          bh: __INIT_BOOST_HEAT__
+          bc: __INIT_BOOST_COOL__
+          nh: "{{ {1: __INIT_NIGHT_Z1_HEAT__, 2: __INIT_NIGHT_Z2_HEAT__}[z] | default(__INIT_NIGHT_Z2_HEAT__) }}"
+          nc: "{{ {1: __INIT_NIGHT_Z1_COOL__, 2: __INIT_NIGHT_Z2_COOL__}[z] | default(__INIT_NIGHT_Z2_COOL__) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_comfort_heat}
+        data: {value: "{{ ch }}"}
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_comfort_cool}
+        data: {value: "{{ cc }}"}
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_away_heat}
+        data: {value: "{{ ah }}"}
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_away_cool}
+        data: {value: "{{ ac }}"}
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_boost_heat}
+        data: {value: "{{ bh }}"}
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_boost_cool}
+        data: {value: "{{ bc }}"}
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_night_heat}
+        data: {value: "{{ nh }}"}
+      - action: input_number.set_value
+        target: {entity_id: input_number.climate_brain_edit_night_cool}
+        data: {value: "{{ nc }}"}
+      - action: script.climate_brain_save_zone
+
+  climate_brain_power_off:
+    alias: Climate Brain HVAC control off
+    mode: restart
+    sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.climate_brain_enabled
+      - action: timer.cancel
+        continue_on_error: true
+        target:
+          entity_id:
+            - timer.climate_brain_writing_watch
+            - timer.climate_brain_away_debounce
+            - timer.climate_brain_empty_confirm
+            - timer.climate_brain_late_arrival
+            - timer.climate_brain_morning_boost
+            - timer.climate_brain_precool_safety
+            - timer.climate_brain_arrival_lockout
+            - timer.climate_brain_vacation_boost
+      - action: input_boolean.turn_off
+        continue_on_error: true
+        target:
+          entity_id:
+            - input_boolean.climate_brain_writing
+            - input_boolean.climate_brain_arrival_lockout
+      - action: input_text.set_value
+        target: {entity_id: input_text.climate_brain_status}
+        data: {value: "HVAC control off"}
+
+  climate_brain_power_on:
+    alias: Climate Brain HVAC control on
+    description: Same cleanup as a full HA restart, then evaluate. Keeps last saved zone temps.
+    mode: restart
+    sequence:
+      - action: timer.cancel
+        continue_on_error: true
+        target:
+          entity_id:
+            - timer.climate_brain_writing_watch
+            - timer.climate_brain_away_debounce
+            - timer.climate_brain_empty_confirm
+            - timer.climate_brain_late_arrival
+            - timer.climate_brain_morning_boost
+            - timer.climate_brain_precool_safety
+            - timer.climate_brain_arrival_lockout
+            - timer.climate_brain_vacation_boost
+      - action: input_boolean.turn_off
+        continue_on_error: true
+        target:
+          entity_id:
+            - input_boolean.climate_brain_writing
+            - input_boolean.climate_brain_arrival_lockout
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.climate_brain_enabled
+      - if:
+          - condition: template
+            value_template: "{{ states('sensor.climate_brain_outdoor') | float(none) is number and states('sensor.climate_brain_outdoor') | float(0) >= states('input_number.climate_brain_season_f') | float(65) + 1 }}"
+        then:
+          - action: input_select.select_option
+            target: {entity_id: input_select.climate_brain_latched_season}
+            data: {option: cool}
+      - if:
+          - condition: template
+            value_template: "{{ states('sensor.climate_brain_outdoor') | float(none) is number and states('sensor.climate_brain_outdoor') | float(100) <= states('input_number.climate_brain_season_f') | float(65) - 1 }}"
+        then:
+          - action: input_select.select_option
+            target: {entity_id: input_select.climate_brain_latched_season}
+            data: {option: heat}
+      - action: script.climate_brain_evaluate
+        data: {reason: power_on}
+
   climate_brain_evaluate:
     alias: Climate Brain evaluate
     description: Compute desired Trane state and write only if it differs.
@@ -723,8 +1111,8 @@ script:
           occupied: "{{ is_state('__OCCUPANCY__', 'on') }}"
           debounce: "{{ is_state('timer.climate_brain_away_debounce', 'active') }}"
           precool_on: "{{ is_state('timer.climate_brain_precool_safety', 'active') }}"
-          outdoor_ready: "{{ states('__OUTDOOR__') not in ['unknown', 'unavailable', 'none', ''] }}"
-          outdoor: "{{ states('__OUTDOOR__') | float(none) }}"
+          outdoor_ready: "{{ states('sensor.climate_brain_outdoor') not in ['unknown', 'unavailable', 'none', ''] }}"
+          outdoor: "{{ states('sensor.climate_brain_outdoor') | float(none) }}"
           empty_hvac: "{{ states('input_select.climate_brain_latched_season') | lower }}"
           late_hold: "{{ is_state('timer.climate_brain_late_arrival', 'active') }}"
           vacation: "{{ is_state('input_boolean.climate_brain_vacation', 'on') }}"
@@ -768,24 +1156,39 @@ script:
               {{ clock }}
             {% endif %}
           pull_hvac: "{{ empty_hvac if empty_hvac in ['heat', 'cool'] else '' }}"
+          occ_hvac: >-
+            {% set m = states('input_select.climate_brain_home_hvac') %}
+            {{ m if m in ['heat', 'cool', 'heat_cool'] else 'heat_cool' }}
           z1_hvac: >-
             {{ empty_hvac if period in ['empty', 'vacation'] else
                pull_hvac if period in ['vacation_boost', 'precool'] else
                pull_hvac if (period in ['morning_z1', 'day'] and boost_on | bool
                              and pull_hvac in ['heat', 'cool']) else
-               'heat_cool' }}
+               occ_hvac }}
           z2_hvac: >-
             {{ empty_hvac if period in ['empty', 'vacation'] else
                pull_hvac if period in ['vacation_boost', 'precool'] else
                pull_hvac if (period in ['morning_z2', 'morning_z1', 'day']
-                             and boost_on | bool and pull_hvac in ['heat', 'cool']) else
-               'heat_cool' }}
+                             and pull_hvac in ['heat', 'cool'] and boost_on | bool) else
+               occ_hvac }}
           comfort_heat: "{{ states('input_number.climate_brain_comfort_heat') | float(71) }}"
           comfort_cool: "{{ states('input_number.climate_brain_comfort_cool') | float(74) }}"
           boost_heat: "{{ states('input_number.climate_brain_boost_heat') | float(73) }}"
           boost_cool: "{{ states('input_number.climate_brain_boost_cool') | float(70) }}"
           away_heat: "{{ states('input_number.climate_brain_away_heat') | float(65) }}"
           away_cool: "{{ states('input_number.climate_brain_away_cool') | float(78) }}"
+          z1_comfort_heat: "{{ states('input_number.climate_brain_z1_comfort_heat') | float(71) }}"
+          z1_comfort_cool: "{{ states('input_number.climate_brain_z1_comfort_cool') | float(74) }}"
+          z1_boost_heat: "{{ states('input_number.climate_brain_z1_boost_heat') | float(73) }}"
+          z1_boost_cool: "{{ states('input_number.climate_brain_z1_boost_cool') | float(70) }}"
+          z1_away_heat: "{{ states('input_number.climate_brain_z1_away_heat') | float(65) }}"
+          z1_away_cool: "{{ states('input_number.climate_brain_z1_away_cool') | float(78) }}"
+          z2_comfort_heat: "{{ states('input_number.climate_brain_z2_comfort_heat') | float(71) }}"
+          z2_comfort_cool: "{{ states('input_number.climate_brain_z2_comfort_cool') | float(74) }}"
+          z2_boost_heat: "{{ states('input_number.climate_brain_z2_boost_heat') | float(73) }}"
+          z2_boost_cool: "{{ states('input_number.climate_brain_z2_boost_cool') | float(70) }}"
+          z2_away_heat: "{{ states('input_number.climate_brain_z2_away_heat') | float(65) }}"
+          z2_away_cool: "{{ states('input_number.climate_brain_z2_away_cool') | float(78) }}"
           vacation_heat: "{{ states('input_number.climate_brain_vacation_heat') | float(55) }}"
           vacation_cool: "{{ states('input_number.climate_brain_vacation_cool') | float(80) }}"
           night_z1_heat: "{{ states('input_number.night_z1_heat') | float(64) }}"
@@ -799,13 +1202,13 @@ __EXTRA_ZONE_VARS__
             {% elif period in ['vacation_boost', 'precool']
                 or (period in ['morning_z1', 'day'] and boost_on | bool
                     and pull_hvac in ['heat', 'cool']) %}
-              {{ boost_heat }}
+              {{ z1_boost_heat }}
             {% elif period == 'vacation' %}
               {{ vacation_heat }}
             {% elif period == 'empty' %}
-              {{ away_heat }}
+              {{ z1_away_heat }}
             {% else %}
-              {{ comfort_heat }}
+              {{ z1_comfort_heat }}
             {% endif %}
           z1_cool_sp: >-
             {% if period in ['night', 'morning_z2'] %}
@@ -813,45 +1216,45 @@ __EXTRA_ZONE_VARS__
             {% elif period in ['vacation_boost', 'precool']
                 or (period in ['morning_z1', 'day'] and boost_on | bool
                     and pull_hvac in ['heat', 'cool']) %}
-              {{ boost_cool }}
+              {{ z1_boost_cool }}
             {% elif period == 'vacation' %}
               {{ vacation_cool }}
             {% elif period == 'empty' %}
-              {{ away_cool }}
+              {{ z1_away_cool }}
             {% else %}
-              {{ comfort_cool }}
+              {{ z1_comfort_cool }}
             {% endif %}
           z2_heat_sp: >-
             {% if period == 'night' %}
               {{ night_z2_heat }}
             {% elif period == 'morning_z2' %}
-              {{ boost_heat if (boost_on | bool and pull_hvac in ['heat', 'cool']) else comfort_heat }}
+              {{ z2_boost_heat if (boost_on | bool and pull_hvac in ['heat', 'cool']) else z2_comfort_heat }}
             {% elif period in ['vacation_boost', 'precool']
                 or (period in ['morning_z1', 'day'] and boost_on | bool
                     and pull_hvac in ['heat', 'cool']) %}
-              {{ boost_heat }}
+              {{ z2_boost_heat }}
             {% elif period == 'vacation' %}
               {{ vacation_heat }}
             {% elif period == 'empty' %}
-              {{ away_heat }}
+              {{ z2_away_heat }}
             {% else %}
-              {{ comfort_heat }}
+              {{ z2_comfort_heat }}
             {% endif %}
           z2_cool_sp: >-
             {% if period == 'night' %}
               {{ night_z2_cool }}
             {% elif period == 'morning_z2' %}
-              {{ boost_cool if (boost_on | bool and pull_hvac in ['heat', 'cool']) else comfort_cool }}
+              {{ z2_boost_cool if (boost_on | bool and pull_hvac in ['heat', 'cool']) else z2_comfort_cool }}
             {% elif period in ['vacation_boost', 'precool']
                 or (period in ['morning_z1', 'day'] and boost_on | bool
                     and pull_hvac in ['heat', 'cool']) %}
-              {{ boost_cool }}
+              {{ z2_boost_cool }}
             {% elif period == 'vacation' %}
               {{ vacation_cool }}
             {% elif period == 'empty' %}
-              {{ away_cool }}
+              {{ z2_away_cool }}
             {% else %}
-              {{ comfort_cool }}
+              {{ z2_comfort_cool }}
             {% endif %}
           z1_single: "{{ iif(z1_hvac == 'cool', z1_cool_sp, z1_heat_sp) }}"
           z2_single: "{{ iif(z2_hvac == 'cool', z2_cool_sp, z2_heat_sp) }}"
@@ -1130,17 +1533,29 @@ __EXTRA_NIGHT_TRIGGERS__
           - input_number.climate_brain_away_cool
           - input_number.climate_brain_vacation_heat
           - input_number.climate_brain_vacation_cool
+          - input_number.climate_brain_z1_comfort_heat
+          - input_number.climate_brain_z1_comfort_cool
+          - input_number.climate_brain_z1_away_heat
+          - input_number.climate_brain_z1_away_cool
+          - input_number.climate_brain_z1_boost_heat
+          - input_number.climate_brain_z1_boost_cool
+          - input_number.climate_brain_z2_comfort_heat
+          - input_number.climate_brain_z2_comfort_cool
+          - input_number.climate_brain_z2_away_heat
+          - input_number.climate_brain_z2_away_cool
+          - input_number.climate_brain_z2_boost_heat
+          - input_number.climate_brain_z2_boost_cool
         id: setpoints
       # Season switch uses ±1°F hysteresis around climate_brain_season_f.
       # ONLY these triggers write the season latch. Evaluate uses the latch.
       - trigger: template
         value_template: >-
-          {{ states('__OUTDOOR__') | float(0)
+          {{ states('sensor.climate_brain_outdoor') | float(0)
              >= states('input_number.climate_brain_season_f') | float(65) + 1 }}
         id: outdoor_summer
       - trigger: template
         value_template: >-
-          {{ states('__OUTDOOR__') | float(100)
+          {{ states('sensor.climate_brain_outdoor') | float(100)
              <= states('input_number.climate_brain_season_f') | float(65) - 1 }}
         id: outdoor_winter
       - trigger: state
@@ -1152,6 +1567,7 @@ __EXTRA_NIGHT_TRIGGERS__
       - trigger: state
         entity_id:
 __PEOPLE_TRAVEL_TRIGGERS__
+          - sensor.climate_brain_outdoor
           - __OUTDOOR__
           - input_number.arrival_heat_slope
           - input_number.arrival_cool_slope
@@ -1296,7 +1712,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
                       need_boost: >-
                         {% set z1n = state_attr('__Z1__', 'current_temperature') | float(none) %}
                         {% set z2n = state_attr('__Z2__', 'current_temperature') | float(none) %}
-                        {% set o = states('__OUTDOOR__') | float(none) %}
+                        {% set o = states('sensor.climate_brain_outdoor') | float(none) %}
                         {% set pull_n = states('input_number.climate_brain_pull_f') | float(2.5) %}
                         {% set spread = (z1n - z2n) | abs if z1n is number and z2n is number else 0 %}
                         {{ spread >= pull_n or (o is number and (o >= 78 or o <= 40)) }}
@@ -1363,12 +1779,12 @@ __PEOPLE_TRAVEL_TRIGGERS__
                   start_temp: "{{ states('input_number.climate_brain_precool_start_temp') | float(72) }}"
                   now_temp: "{{ state_attr('__Z2__', 'current_temperature') | float(72) }}"
                   started: "{{ states('input_datetime.climate_brain_precool_started') }}"
-                  outdoor_now: "{{ states('__OUTDOOR__') | float(none) }}"
+                  outdoor_now: "{{ states('sensor.climate_brain_outdoor') | float(none) }}"
                   season_now: "{{ states('input_number.climate_brain_season_f') | float(65) }}"
                   latch_now: "{{ states('input_select.climate_brain_latched_season') | lower }}"
                   slope_ent: >-
                     {% set latch = states('input_select.climate_brain_latched_season') | lower %}
-                    {% set o = states('__OUTDOOR__') | float(none) %}
+                    {% set o = states('sensor.climate_brain_outdoor') | float(none) %}
                     {% set season = states('input_number.climate_brain_season_f') | float(65) %}
                     {% if latch == 'cool' %}
                       input_number.arrival_cool_slope
@@ -1479,7 +1895,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
                   need_boost: >-
                     {% set z1n = state_attr('__Z1__', 'current_temperature') | float(none) %}
                     {% set z2n = state_attr('__Z2__', 'current_temperature') | float(none) %}
-                    {% set o = states('__OUTDOOR__') | float(none) %}
+                    {% set o = states('sensor.climate_brain_outdoor') | float(none) %}
                     {% set pull_n = states('input_number.climate_brain_pull_f') | float(2.5) %}
                     {% set spread = (z1n - z2n) | abs if z1n is number and z2n is number else 0 %}
                     {{ spread >= pull_n or (o is number and (o >= 78 or o <= 40)) }}
@@ -1598,7 +2014,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
                       {% endif %}
                     {% endfor %}
                     {{ ns.best }}
-                  outdoor: "{{ states('__OUTDOOR__') | float(none) }}"
+                  outdoor: "{{ states('sensor.climate_brain_outdoor') | float(none) }}"
                   season: "{{ states('input_number.climate_brain_season_f') | float(65) }}"
                   latch: "{{ states('input_select.climate_brain_latched_season') | lower }}"
                   z2t: "{{ state_attr('__Z2__', 'current_temperature') | float(none) }}"
@@ -1617,7 +2033,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
                     {{ (z2t - comfort | float) | abs if z2t is number else 0 }}
                   slope: >-
                     {% set latch_s = states('input_select.climate_brain_latched_season') | lower %}
-                    {% set o = states('__OUTDOOR__') | float(none) %}
+                    {% set o = states('sensor.climate_brain_outdoor') | float(none) %}
                     {% set season_n = states('input_number.climate_brain_season_f') | float(65) %}
                     {% set use_cool = latch_s == 'cool' or (latch_s not in ['heat', 'cool'] and o is number and o >= season_n) %}
                     {% if use_cool %}
@@ -1746,7 +2162,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
           {{ states('__OCCUPANCY__') in ['on', 'off']
              and states('__Z1__') not in ['unknown', 'unavailable', 'none', '']
              and states('__Z2__') not in ['unknown', 'unavailable', 'none', '']
-             and states('__OUTDOOR__') not in ['unknown', 'unavailable', 'none', ''] }}
+             and states('sensor.climate_brain_outdoor') not in ['unknown', 'unavailable', 'none', ''] }}
         timeout: "00:02:00"
         continue_on_timeout: true
       - action: input_boolean.turn_off
@@ -1758,8 +2174,8 @@ __PEOPLE_TRAVEL_TRIGGERS__
       - if:
           - condition: template
             value_template: >-
-              {{ states('__OUTDOOR__') | float(none) is number
-                 and (states('__OUTDOOR__') | float(0)
+              {{ states('sensor.climate_brain_outdoor') | float(none) is number
+                 and (states('sensor.climate_brain_outdoor') | float(0)
                       >= states('input_number.climate_brain_season_f') | float(65) + 1) }}
         then:
           - action: input_select.select_option
@@ -1770,8 +2186,8 @@ __PEOPLE_TRAVEL_TRIGGERS__
       - if:
           - condition: template
             value_template: >-
-              {{ states('__OUTDOOR__') | float(none) is number
-                 and (states('__OUTDOOR__') | float(100)
+              {{ states('sensor.climate_brain_outdoor') | float(none) is number
+                 and (states('sensor.climate_brain_outdoor') | float(100)
                       <= states('input_number.climate_brain_season_f') | float(65) - 1) }}
         then:
           - action: input_select.select_option
@@ -1839,7 +2255,7 @@ __PEOPLE_TRAVEL_TRIGGERS__
           need_boost: >-
             {% set z1n = state_attr('__Z1__', 'current_temperature') | float(none) %}
             {% set z2n = state_attr('__Z2__', 'current_temperature') | float(none) %}
-            {% set o = states('__OUTDOOR__') | float(none) %}
+            {% set o = states('sensor.climate_brain_outdoor') | float(none) %}
             {% set pull_n = states('input_number.climate_brain_pull_f') | float(2.5) %}
             {% set spread = (z1n - z2n) | abs if z1n is number and z2n is number else 0 %}
             {{ spread >= pull_n or (o is number and (o >= 78 or o <= 40)) }}
@@ -1857,6 +2273,44 @@ __PEOPLE_TRAVEL_TRIGGERS__
       - action: script.climate_brain_evaluate
         data:
           reason: "{{ trigger.id | default('ha_start') }}"
+
+
+  - id: climate_brain_zone_editor
+    alias: Climate Brain zone editor
+    mode: queued
+    max: 8
+    triggers:
+      - trigger: state
+        entity_id: input_select.climate_brain_edit_zone
+        id: load
+      - trigger: state
+        entity_id: input_button.climate_brain_save_zone
+        id: save
+      - trigger: state
+        entity_id: input_button.climate_brain_zone_defaults
+        id: defaults
+      - trigger: state
+        entity_id: input_button.climate_brain_hvac_on
+        id: on
+      - trigger: state
+        entity_id: input_button.climate_brain_hvac_off
+        id: off
+    actions:
+      - choose:
+          - conditions: "{{ trigger.id == 'save' }}"
+            sequence:
+              - action: script.climate_brain_save_zone
+          - conditions: "{{ trigger.id == 'defaults' }}"
+            sequence:
+              - action: script.climate_brain_zone_defaults
+          - conditions: "{{ trigger.id == 'on' }}"
+            sequence:
+              - action: script.climate_brain_power_on
+          - conditions: "{{ trigger.id == 'off' }}"
+            sequence:
+              - action: script.climate_brain_power_off
+        default:
+          - action: script.climate_brain_load_zone
 
   - id: climate_brain_writing_watchdog
     alias: Climate Brain writing watchdog
